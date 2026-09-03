@@ -1,14 +1,18 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">🧱 LEGO Inventory</h1>
-      <p className="max-w-md text-base text-gray-600 dark:text-gray-400">
-        El proyecto base está funcionando correctamente. Next.js, TypeScript y
-        Tailwind CSS están configurados y listos para empezar a construir.
+    <main className="mx-auto flex max-w-2xl flex-col items-center gap-4 px-5 py-20 text-center">
+      <h1 className="text-3xl font-semibold text-ink">Mi Colección LEGO</h1>
+      <p className="max-w-md text-sm text-steel">
+        Organiza tu inventario personal de piezas, colores y ubicaciones.
       </p>
-      <span className="mt-2 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
-        ✅ Paso 1 completado
+      <span className="inline-flex items-center rounded-full bg-green-tint px-3 py-1 text-xs font-medium text-green">
+        Paso 4: inventario de piezas listo
       </span>
+      <Link href="/piezas" className="btn btn-primary mt-2">
+        Ver mis piezas
+      </Link>
     </main>
   );
 }

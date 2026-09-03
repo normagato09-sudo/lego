@@ -27,3 +27,11 @@ npx supabase db push
   por defecto hasta que se implemente la autenticación en un paso posterior).
 
 No contiene datos reales ni claves de ningún tipo.
+
+## Segunda migración (Paso 4)
+
+`migrations/20260903090000_seed_colors.sql` añade los 8 colores base
+(Rojo, Azul, Verde, Amarillo, Negro, Blanco, Gris, Transparente). Es
+necesaria porque `pieces.color_id` es obligatorio y la tabla `colors` se
+creó vacía — sin esto no se puede crear ninguna pieza. Aplícala igual que
+la primera (SQL Editor o `supabase db push`).

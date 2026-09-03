@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'; 
 import { getColors, getLocations } from "@/lib/pieces";
 import { createPiece } from "../actions";
 import { PieceForm } from "../_components/PieceForm";

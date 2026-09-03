@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'; 
 import Link from "next/link";
 import { getPieces } from "@/lib/pieces";
 import { PieceCard } from "./_components/PieceCard";

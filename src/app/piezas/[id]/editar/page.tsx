@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'; 
 import { notFound } from "next/navigation";
 import { getPieceById, getColors, getLocations } from "@/lib/pieces";
 import { updatePiece } from "../../actions";

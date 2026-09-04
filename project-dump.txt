@@ -1,0 +1,1345 @@
+
+===== package.json =====
+{
+  "name": "lego-inventory",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.5",
+    "@supabase/supabase-js": "^2.114.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+
+===== tsconfig.json =====
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+
+
+===== next.config.ts =====
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+
+
+===== postcss.config.mjs =====
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+
+===== src/app/favicon.ico (binario, 25931 bytes, no incluido) =====
+
+===== src/app/globals.css =====
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #14171a;
+  --color-ink-soft: #3a3e42;
+  --color-steel: #6b7069;
+  --color-steel-light: #9a9d97;
+  --color-fog: #f3f4f2;
+  --color-paper: #ffffff;
+  --color-line: #e3e3de;
+  --color-line-strong: #c9c9c2;
+  --color-brick: #c4281c;
+  --color-brick-dark: #961f16;
+  --color-brick-tint: #fbeae8;
+  --color-green: #237841;
+  --color-green-tint: #e7f3ec;
+  --color-amber: #b8790e;
+  --color-amber-tint: #fbf0dd;
+  --color-red-status: #b23227;
+  --color-red-tint: #fbeae8;
+
+  --font-display: var(--font-space-grotesk), sans-serif;
+  --font-sans: var(--font-plex-sans), sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+}
+
+body {
+  background: var(--color-fog);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+@layer components {
+  .input {
+    width: 100%;
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    background: var(--color-paper);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-line-strong);
+    box-shadow: 0 0 0 2px var(--color-brick-tint);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  }
+  .btn:hover {
+    background: var(--color-fog);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-brick);
+    border-color: var(--color-brick);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--color-brick-dark);
+  }
+
+  .btn-ghost {
+    border-color: transparent;
+    background: transparent;
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
+  .btn-ghost:hover {
+    background: var(--color-fog);
+  }
+
+  .btn-danger {
+    border-color: var(--color-red-status);
+    color: var(--color-red-status);
+    background: var(--color-red-tint);
+  }
+  .btn-danger:hover {
+    background: var(--color-red-status);
+    color: #fff;
+  }
+}
+
+
+===== src/app/layout.tsx =====
+import type { Metadata } from "next";
+import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { SiteHeader } from "@/components/SiteHeader";
+import "./globals.css";
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-space-grotesk",
+});
+
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-sans",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["500"],
+  variable: "--font-plex-mono",
+});
+
+export const metadata: Metadata = {
+  title: "LEGO Inventory",
+  description: "Organiza tu colección personal de piezas LEGO",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="es"
+      className={`h-full antialiased ${spaceGrotesk.variable} ${plexSans.variable} ${plexMono.variable}`}
+    >
+      <body className="flex min-h-full flex-col">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+      </body>
+    </html>
+  );
+}
+
+
+===== src/app/page.tsx =====
+export default function Home() {
+  return (
+    <main className="mx-auto flex min-h-[70vh] max-w-3xl flex-col items-center justify-center gap-8 px-6 py-16 text-center">
+      <LegoBrick />
+      <div className="flex flex-col items-center gap-3">
+        <h1 className="text-4xl font-semibold text-ink sm:text-5xl">
+          LEGO Inventory
+        </h1>
+        <p className="max-w-sm text-base text-steel">
+          Organiza tu colección de piezas LEGO.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+function LegoBrick() {
+  return (
+    <svg
+      width="104"
+      height="76"
+      viewBox="0 0 104 76"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Pieza LEGO"
+    >
+      <rect x="4" y="24" width="96" height="48" rx="6" className="fill-brick" />
+      <circle cx="26" cy="14" r="11" className="fill-brick" />
+      <circle cx="52" cy="14" r="11" className="fill-brick" />
+      <circle cx="78" cy="14" r="11" className="fill-brick" />
+      <circle cx="26" cy="14" r="6.5" className="fill-brick-dark" />
+      <circle cx="52" cy="14" r="6.5" className="fill-brick-dark" />
+      <circle cx="78" cy="14" r="6.5" className="fill-brick-dark" />
+    </svg>
+  );
+}
+
+
+===== src/app/piezas/actions.ts =====
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export type PieceFieldErrors = Partial<
+  Record<"lego_id" | "name" | "color_id" | "quantity", string>
+>;
+
+export type PieceFormState = {
+  error?: string;
+  fieldErrors?: PieceFieldErrors;
+};
+
+type ParsedPiece = {
+  legoId: string;
+  name: string;
+  description: string | null;
+  colorId: string;
+  locationId: string | null;
+  quantity: number;
+  fieldErrors: PieceFieldErrors;
+};
+
+function parsePieceForm(formData: FormData): ParsedPiece {
+  const legoId = String(formData.get("lego_id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const colorId = String(formData.get("color_id") ?? "").trim();
+  const locationIdRaw = String(formData.get("location_id") ?? "").trim();
+  const quantityRaw = String(formData.get("quantity") ?? "").trim();
+  const quantity = Number(quantityRaw);
+
+  const fieldErrors: PieceFieldErrors = {};
+  if (!legoId) fieldErrors.lego_id = "El ID de LEGO es obligatorio.";
+  if (!name) fieldErrors.name = "El nombre es obligatorio.";
+  if (!colorId) fieldErrors.color_id = "Elige un color.";
+  if (quantityRaw === "" || !Number.isInteger(quantity) || quantity < 0) {
+    fieldErrors.quantity = "La cantidad debe ser un número entero igual o mayor que 0.";
+  }
+
+  return {
+    legoId,
+    name,
+    description: description === "" ? null : description,
+    colorId,
+    locationId: locationIdRaw === "" ? null : locationIdRaw,
+    quantity,
+    fieldErrors,
+  };
+}
+
+/** Traduce errores conocidos de Postgres a mensajes legibles en español. */
+function friendlyDbError(error: { code?: string; message: string }): string {
+  if (error.code === "23505") {
+    return "Ya existe una pieza con ese ID, color y ubicación. Si quieres sumar unidades, edita esa pieza en vez de crear una nueva.";
+  }
+  if (error.code === "23503") {
+    return "No se puede completar la operación porque la pieza está relacionada con otro dato (por ejemplo, un proyecto).";
+  }
+  if (error.code === "23514") {
+    return "La cantidad no puede ser negativa.";
+  }
+  return `No se pudo guardar la pieza: ${error.message}`;
+}
+
+export async function createPiece(
+  _prevState: PieceFormState,
+  formData: FormData,
+): Promise<PieceFormState> {
+  const parsed = parsePieceForm(formData);
+  if (Object.keys(parsed.fieldErrors).length > 0) {
+    return { fieldErrors: parsed.fieldErrors };
+  }
+
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("pieces")
+    .insert({
+      lego_id: parsed.legoId,
+      name: parsed.name,
+      description: parsed.description,
+      color_id: parsed.colorId,
+      location_id: parsed.locationId,
+      quantity: parsed.quantity,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { error: friendlyDbError(error) };
+  }
+
+  revalidatePath("/piezas");
+  redirect(`/piezas/${data.id}`);
+}
+
+export async function updatePiece(
+  id: string,
+  _prevState: PieceFormState,
+  formData: FormData,
+): Promise<PieceFormState> {
+  const parsed = parsePieceForm(formData);
+  if (Object.keys(parsed.fieldErrors).length > 0) {
+    return { fieldErrors: parsed.fieldErrors };
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("pieces")
+    .update({
+      lego_id: parsed.legoId,
+      name: parsed.name,
+      description: parsed.description,
+      color_id: parsed.colorId,
+      location_id: parsed.locationId,
+      quantity: parsed.quantity,
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { error: friendlyDbError(error) };
+  }
+
+  revalidatePath("/piezas");
+  revalidatePath(`/piezas/${id}`);
+  redirect(`/piezas/${id}`);
+}
+
+export async function deletePiece(formData: FormData): Promise<void> {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("pieces").delete().eq("id", id);
+
+  if (error) {
+    console.error("Error al eliminar la pieza:", error.message);
+    redirect(`/piezas/${id}?error=delete`);
+  }
+
+  revalidatePath("/piezas");
+  redirect("/piezas");
+}
+
+export type QuantityState = { error?: string };
+
+export async function updateQuantity(
+  id: string,
+  _prevState: QuantityState,
+  formData: FormData,
+): Promise<QuantityState> {
+  const raw = String(formData.get("quantity") ?? "").trim();
+  const quantity = Number(raw);
+
+  if (raw === "" || !Number.isInteger(quantity) || quantity < 0) {
+    return { error: "La cantidad debe ser un número entero igual o mayor que 0." };
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("pieces").update({ quantity }).eq("id", id);
+
+  if (error) {
+    return { error: friendlyDbError(error) };
+  }
+
+  revalidatePath("/piezas");
+  revalidatePath(`/piezas/${id}`);
+  return {};
+}
+
+
+===== src/app/piezas/nueva/page.tsx =====
+export const dynamic = 'force-dynamic'; 
+import { getColors, getLocations } from "@/lib/pieces";
+import { createPiece } from "../actions";
+import { PieceForm } from "../_components/PieceForm";
+
+export default async function NewPiecePage() {
+  const [colors, locations] = await Promise.all([getColors(), getLocations()]);
+
+  return (
+    <div className="mx-auto max-w-lg px-5 py-8">
+      <h1 className="mb-1 text-xl font-semibold text-ink">Añadir pieza</h1>
+      <p className="mb-6 text-sm text-steel">Rellena los datos de la nueva pieza.</p>
+      <PieceForm action={createPiece} colors={colors} locations={locations} submitLabel="Crear pieza" />
+    </div>
+  );
+}
+
+
+===== src/app/piezas/page.tsx =====
+export const dynamic = 'force-dynamic'; 
+import Link from "next/link";
+import { getPieces } from "@/lib/pieces";
+import { PieceCard } from "./_components/PieceCard";
+
+export default async function PiezasPage() {
+  const pieces = await getPieces();
+
+  return (
+    <div className="mx-auto max-w-5xl px-5 py-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-ink">Piezas</h1>
+          <p className="text-sm text-steel">
+            {pieces.length} {pieces.length === 1 ? "pieza" : "piezas"} en tu inventario
+          </p>
+        </div>
+        <Link href="/piezas/nueva" className="btn btn-primary">
+          + Añadir pieza
+        </Link>
+      </div>
+
+      {pieces.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-line-strong px-6 py-14 text-center">
+          <p className="mb-4 text-sm text-steel">Todavía no tienes piezas en tu inventario.</p>
+          <Link href="/piezas/nueva" className="btn btn-primary">
+            Añadir la primera pieza
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {pieces.map((piece) => (
+            <PieceCard key={piece.id} piece={piece} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+===== src/app/piezas/[id]/editar/page.tsx =====
+export const dynamic = 'force-dynamic';
+
+import { notFound } from "next/navigation";
+import { getPieceById, getColors, getLocations } from "@/lib/pieces";
+import { updatePiece } from "../../actions";
+import { PieceForm } from "../../_components/PieceForm";
+
+export default async function EditPiecePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const [piece, colors, locations] = await Promise.all([
+    getPieceById(id),
+    getColors(),
+    getLocations(),
+  ]);
+  if (!piece) notFound();
+  const action = updatePiece.bind(null, id);
+  return (
+    <div className="mx-auto max-w-lg px-5 py-8">
+      <h1 className="mb-1 text-xl font-semibold text-ink">Editar pieza</h1>
+      <p className="mb-6 text-sm text-steel">
+        {piece.lego_id} · {piece.name}
+      </p>
+      <PieceForm
+        action={action}
+        colors={colors}
+        locations={locations}
+        defaultValues={{
+          lego_id: piece.lego_id,
+          name: piece.name,
+          description: piece.description,
+          color_id: piece.color_id,
+          location_id: piece.location_id,
+          quantity: piece.quantity,
+          image_url: piece.image_url,
+        }}
+        submitLabel="Guardar cambios"
+      />
+    </div>
+  );
+}
+
+
+===== src/app/piezas/[id]/page.tsx =====
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getPieceById } from "@/lib/pieces";
+import { ColorSwatch } from "@/components/ColorSwatch";
+import { DeletePieceButton } from "../_components/DeletePieceButton";
+import { QuantityStepper } from "../_components/QuantityStepper";
+
+export default async function PieceDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const piece = await getPieceById(id);
+  if (!piece) notFound();
+  return (
+    <div className="mx-auto max-w-2xl px-5 py-8">
+      <Link href="/piezas" className="text-sm text-steel hover:text-ink">
+        ← Volver a piezas
+      </Link>
+      <div className="mt-4 flex flex-col gap-5 rounded-lg border border-line bg-paper p-6 sm:flex-row">
+        <div
+          className="flex h-32 w-32 shrink-0 items-center justify-center self-center overflow-hidden rounded-md sm:self-start"
+          style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
+        >
+          {piece.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={piece.image_url}
+              alt={piece.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <ColorSwatch color={piece.color} size={56} shape="square" />
+          )}
+        </div>
+        <div className="flex-1">
+          <span className="font-mono text-xs text-steel">{piece.lego_id}</span>
+          <h1 className="text-xl font-semibold text-ink">{piece.name}</h1>
+          {piece.description && <p className="mt-1 text-sm text-steel">{piece.description}</p>}
+          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <dt className="text-steel">Color</dt>
+            <dd className="flex items-center gap-1.5 text-ink">
+              <ColorSwatch color={piece.color} size={12} />
+              {piece.color.name}
+            </dd>
+            <dt className="text-steel">Ubicación</dt>
+            <dd className="text-ink">{piece.locationLabel ?? "Sin ubicación"}</dd>
+          </dl>
+        </div>
+      </div>
+      <div className="mt-6 rounded-lg border border-line bg-paper p-5">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Cantidad disponible</h2>
+        <QuantityStepper id={piece.id} quantity={piece.quantity} />
+      </div>
+      <div className="mt-6 flex gap-2">
+        <Link href={`/piezas/${piece.id}/editar`} className="btn">
+          Editar
+        </Link>
+        <DeletePieceButton id={piece.id} name={piece.name} />
+      </div>
+    </div>
+  );
+}
+
+
+===== src/app/piezas/_components/DeletePieceButton.tsx =====
+"use client";
+
+import { deletePiece } from "../actions";
+
+type Props = {
+  id: string;
+  name: string;
+  compact?: boolean;
+};
+
+export function DeletePieceButton({ id, name, compact = false }: Props) {
+  return (
+    <form
+      action={deletePiece}
+      onSubmit={(event) => {
+        const confirmed = window.confirm(
+          `¿Eliminar "${name}" del inventario? Esta acción no se puede deshacer.`,
+        );
+        if (!confirmed) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        className={compact ? "btn-ghost text-xs text-red-status" : "btn btn-danger"}
+      >
+        Eliminar
+      </button>
+    </form>
+  );
+}
+
+
+===== src/app/piezas/_components/PieceCard.tsx =====
+import Link from "next/link";
+import type { PieceWithDetails } from "@/lib/types";
+import { ColorSwatch } from "@/components/ColorSwatch";
+import { DeletePieceButton } from "./DeletePieceButton";
+
+const studIcon = (
+  <svg viewBox="0 0 40 28" className="h-6 w-9 text-ink-soft/40" aria-hidden="true">
+    <rect x="2" y="8" width="36" height="18" rx="2" fill="currentColor" />
+    <circle cx="12" cy="8" r="4" fill="currentColor" />
+    <circle cx="20" cy="8" r="4" fill="currentColor" />
+    <circle cx="28" cy="8" r="4" fill="currentColor" />
+  </svg>
+);
+
+export function PieceCard({ piece }: { piece: PieceWithDetails }) {
+  return (
+    <div className="flex flex-col rounded-lg border border-line bg-paper p-3">
+      <Link
+        href={`/piezas/${piece.id}`}
+        className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-md"
+        style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
+      >
+        {piece.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={piece.image_url}
+            alt={piece.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          studIcon
+        )}
+      </Link>
+
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-mono text-xs text-steel">{piece.lego_id}</span>
+        <span className="rounded-full bg-fog px-2 py-0.5 text-xs font-semibold text-ink">
+          {piece.quantity}
+        </span>
+      </div>
+
+      <Link href={`/piezas/${piece.id}`} className="mt-1 text-sm font-medium leading-snug hover:underline">
+        {piece.name}
+      </Link>
+
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-steel">
+        <ColorSwatch color={piece.color} size={10} />
+        <span>{piece.color.name}</span>
+        {piece.locationLabel && <span className="truncate">· {piece.locationLabel}</span>}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1 text-xs">
+        <Link href={`/piezas/${piece.id}`} className="btn-ghost text-xs">
+          Ver detalle
+        </Link>
+        <Link href={`/piezas/${piece.id}/editar`} className="btn-ghost text-xs">
+          Editar
+        </Link>
+        <DeletePieceButton id={piece.id} name={piece.name} compact />
+      </div>
+    </div>
+  );
+}
+
+
+===== src/app/piezas/_components/PieceForm.tsx =====
+"use client";
+
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import type { Color, Location } from "@/lib/types";
+import type { PieceFormState } from "../actions";
+import { PiecePhotoField } from "./PiecePhotoField";
+
+type DefaultValues = {
+  lego_id: string;
+  name: string;
+  description: string | null;
+  color_id: string;
+  location_id: string | null;
+  quantity: number;
+  image_url?: string | null;
+};
+
+type Props = {
+  action: (prevState: PieceFormState, formData: FormData) => Promise<PieceFormState>;
+  colors: Color[];
+  locations: Location[];
+  defaultValues?: DefaultValues;
+  submitLabel: string;
+};
+
+function groupLocations(locations: Location[]) {
+  const topLevel = locations.filter((l) => !l.parent_id);
+  return topLevel.map((box) => ({
+    box,
+    children: locations.filter((l) => l.parent_id === box.id),
+  }));
+}
+
+function SubmitButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending} className="btn btn-primary">
+      {pending ? "Guardando..." : label}
+    </button>
+  );
+}
+
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5 text-sm">
+      <span className="font-medium text-ink">{label}</span>
+      {children}
+      {error && <span className="text-xs text-red-status">{error}</span>}
+    </label>
+  );
+}
+
+export function PieceForm({ action, colors, locations, defaultValues, submitLabel }: Props) {
+  const [state, formAction] = useActionState(action, {} as PieceFormState);
+  const grouped = groupLocations(locations);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-5">
+      {state.error && (
+        <p className="rounded-md border border-red-status/30 bg-red-tint px-3 py-2 text-sm text-red-status">
+          {state.error}
+        </p>
+      )}
+
+      <PiecePhotoField initialUrl={defaultValues?.image_url ?? null} />
+
+      <Field label="ID de LEGO" error={state.fieldErrors?.lego_id}>
+        <input
+          name="lego_id"
+          defaultValue={defaultValues?.lego_id}
+          required
+          className="input"
+          placeholder="p. ej. 3001"
+        />
+      </Field>
+
+      <Field label="Nombre" error={state.fieldErrors?.name}>
+        <input
+          name="name"
+          defaultValue={defaultValues?.name}
+          required
+          className="input"
+          placeholder="p. ej. Brick 2x4"
+        />
+      </Field>
+
+      <Field label="Descripción (opcional)">
+        <textarea
+          name="description"
+          defaultValue={defaultValues?.description ?? ""}
+          rows={3}
+          className="input"
+        />
+      </Field>
+
+      <Field label="Color" error={state.fieldErrors?.color_id}>
+        <select
+          name="color_id"
+          defaultValue={defaultValues?.color_id ?? ""}
+          required
+          className="input"
+        >
+          <option value="" disabled>
+            Elige un color
+          </option>
+          {colors.map((color) => (
+            <option key={color.id} value={color.id}>
+              {color.name}
+            </option>
+          ))}
+        </select>
+        {colors.length === 0 && (
+          <span className="text-xs text-amber">
+            No hay colores en la base de datos todavía.
+          </span>
+        )}
+      </Field>
+
+      <Field label="Cantidad" error={state.fieldErrors?.quantity}>
+        <input
+          name="quantity"
+          type="number"
+          min={0}
+          step={1}
+          defaultValue={defaultValues?.quantity ?? 0}
+          required
+          className="input"
+        />
+      </Field>
+
+      <Field label="Ubicación (opcional)">
+        <select name="location_id" defaultValue={defaultValues?.location_id ?? ""} className="input">
+          <option value="">Sin ubicación</option>
+          {grouped.map(({ box, children }) =>
+            children.length > 0 ? (
+              <optgroup key={box.id} label={box.name}>
+                {children.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : (
+              <option key={box.id} value={box.id}>
+                {box.name}
+              </option>
+            ),
+          )}
+        </select>
+        {locations.length === 0 && (
+          <span className="text-xs text-steel">Todavía no hay ubicaciones creadas.</span>
+        )}
+      </Field>
+
+      <div className="pt-2">
+        <SubmitButton label={submitLabel} />
+      </div>
+    </form>
+  );
+}
+
+
+===== src/app/piezas/_components/PiecePhotoField.tsx =====
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+const placeholderIcon = (
+  <svg viewBox="0 0 40 28" className="h-8 w-11 text-ink-soft/40" aria-hidden="true">
+    <rect x="2" y="8" width="36" height="18" rx="2" fill="currentColor" />
+    <circle cx="12" cy="8" r="4" fill="currentColor" />
+    <circle cx="20" cy="8" r="4" fill="currentColor" />
+    <circle cx="28" cy="8" r="4" fill="currentColor" />
+  </svg>
+);
+
+type Props = {
+  initialUrl?: string | null;
+};
+
+/**
+ * Campo de foto de la pieza.
+ * Por ahora es solo previsualización en memoria del navegador (URL.createObjectURL),
+ * sin conexión a base de datos ni a almacenamiento externo. Preparado para conectarse
+ * más adelante (por ejemplo, subiendo a Supabase Storage y guardando la URL en image_url).
+ */
+export function PiecePhotoField({ initialUrl = null }: Props) {
+  const [preview, setPreview] = useState<string | null>(initialUrl);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [objectUrl]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+    setPreview(url);
+  }
+
+  function handleRemove() {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    setObjectUrl(null);
+    setPreview(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      <span className="font-medium text-ink">Foto de la pieza</span>
+      <div className="flex items-center gap-3">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-fog">
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={preview}
+              alt="Vista previa de la pieza"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            placeholderIcon
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="btn-ghost cursor-pointer text-xs">
+            {preview ? "Cambiar foto" : "Subir foto"}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+          {preview && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="btn-ghost text-xs text-red-status"
+            >
+              Eliminar foto
+            </button>
+          )}
+        </div>
+      </div>
+      <span className="text-xs text-steel">
+        Por ahora la foto solo se previsualiza en este dispositivo; todavía no se guarda.
+      </span>
+    </div>
+  );
+}
+
+
+===== src/app/piezas/_components/QuantityStepper.tsx =====
+"use client";
+
+import { useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { updateQuantity, type QuantityState } from "../actions";
+
+function SaveButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="btn" disabled={pending}>
+      {pending ? "Guardando..." : "Guardar"}
+    </button>
+  );
+}
+
+export function QuantityStepper({ id, quantity }: { id: string; quantity: number }) {
+  const action = updateQuantity.bind(null, id);
+  const [state, formAction] = useActionState(action, {} as QuantityState);
+  const [value, setValue] = useState(quantity);
+
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-3">
+      <button
+        type="button"
+        className="btn h-9 w-9 p-0 text-base"
+        onClick={() => setValue((v) => Math.max(0, v - 1))}
+        aria-label="Restar una unidad"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        name="quantity"
+        min={0}
+        step={1}
+        value={value}
+        onChange={(event) => {
+          const next = Number(event.target.value);
+          setValue(Number.isFinite(next) ? Math.max(0, Math.trunc(next)) : 0);
+        }}
+        className="input w-24 text-center"
+      />
+      <button
+        type="button"
+        className="btn h-9 w-9 p-0 text-base"
+        onClick={() => setValue((v) => v + 1)}
+        aria-label="Sumar una unidad"
+      >
+        +
+      </button>
+      <SaveButton />
+      {state.error && <span className="text-xs text-red-status">{state.error}</span>}
+    </form>
+  );
+}
+
+
+===== src/components/ColorSwatch.tsx =====
+import type { CSSProperties } from "react";
+import type { Color } from "@/lib/types";
+
+type Props = {
+  color: Color;
+  size?: number;
+  shape?: "circle" | "square";
+};
+
+/** Punto o bloque de color. Si la pieza es transparente (sin hex_code), usa un patrón a cuadros. */
+export function ColorSwatch({ color, size = 16, shape = "circle" }: Props) {
+  const style: CSSProperties = color.hex_code
+    ? { backgroundColor: color.hex_code, width: size, height: size }
+    : {
+        width: size,
+        height: size,
+        backgroundImage:
+          "repeating-conic-gradient(var(--color-line) 0% 25%, var(--color-paper) 0% 50%)",
+        backgroundSize: `${Math.max(6, size / 3)}px ${Math.max(6, size / 3)}px`,
+      };
+
+  return (
+    <span
+      role="img"
+      aria-label={`Color ${color.name}`}
+      className={`inline-block shrink-0 border border-line-strong ${
+        shape === "circle" ? "rounded-full" : "rounded-md"
+      }`}
+      style={style}
+    />
+  );
+}
+
+
+===== src/components/SiteHeader.tsx =====
+import Link from "next/link";
+
+export function SiteHeader() {
+  return (
+    <header className="border-b border-line bg-paper">
+      <div className="mx-auto flex max-w-5xl items-center gap-6 px-5 py-3.5">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-display text-[15px] font-semibold text-ink"
+        >
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-brick" aria-hidden="true" />
+          Mi Colección LEGO
+        </Link>
+        <nav className="flex gap-1 text-sm">
+          <Link href="/" className="btn-ghost">
+            Inicio
+          </Link>
+          <Link href="/piezas" className="btn-ghost">
+            Piezas
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+
+===== src/lib/pieces.ts =====
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { Color, Location, PieceWithDetails } from "@/lib/types";
+
+export async function getColors(): Promise<Color[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("colors")
+    .select("id, name, hex_code")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(`No se pudieron cargar los colores: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+export async function getLocations(): Promise<Location[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("locations")
+    .select("id, name, parent_id")
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las ubicaciones: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** Construye una etiqueta legible ("Caja 1 › Compartimento A") para una ubicación. */
+export function locationLabel(
+  locationId: string | null,
+  locations: Location[],
+): string | null {
+  if (!locationId) return null;
+  const byId = new Map(locations.map((l) => [l.id, l]));
+  const location = byId.get(locationId);
+  if (!location) return null;
+  if (!location.parent_id) return location.name;
+  const parent = byId.get(location.parent_id);
+  return parent ? `${parent.name} › ${location.name}` : location.name;
+}
+
+export async function getPieces(): Promise<PieceWithDetails[]> {
+  const supabase = createAdminClient();
+  const [{ data: pieces, error }, colors, locations] = await Promise.all([
+    supabase.from("pieces").select("*").order("created_at", { ascending: false }),
+    getColors(),
+    getLocations(),
+  ]);
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las piezas: ${error.message}`);
+  }
+
+  const colorsById = new Map(colors.map((c) => [c.id, c]));
+  return (pieces ?? []).map((piece) => ({
+    ...piece,
+    color: colorsById.get(piece.color_id) ?? { id: piece.color_id, name: "Desconocido", hex_code: null },
+    locationLabel: locationLabel(piece.location_id, locations),
+  }));
+}
+
+export async function getPieceById(id: string): Promise<PieceWithDetails | null> {
+  const supabase = createAdminClient();
+  const [{ data: piece, error }, colors, locations] = await Promise.all([
+    supabase.from("pieces").select("*").eq("id", id).maybeSingle(),
+    getColors(),
+    getLocations(),
+  ]);
+
+  if (error) {
+    throw new Error(`No se pudo cargar la pieza: ${error.message}`);
+  }
+  if (!piece) return null;
+
+  const colorsById = new Map(colors.map((c) => [c.id, c]));
+  return {
+    ...piece,
+    color: colorsById.get(piece.color_id) ?? { id: piece.color_id, name: "Desconocido", hex_code: null },
+    locationLabel: locationLabel(piece.location_id, locations),
+  };
+}
+
+
+===== src/lib/supabase/admin.ts =====
+import { createClient } from "@supabase/supabase-js";
+
+/**
+ * Cliente de Supabase con la clave "service_role".
+ *
+ * IMPORTANTE: solo se debe importar desde código que se ejecuta en el
+ * servidor (Server Components, Server Actions, Route Handlers). Nunca debe
+ * usarse desde un componente cliente ("use client"), porque saltaría la
+ * seguridad de la base de datos.
+ *
+ * Todas las tablas tienen Row Level Security activado sin políticas
+ * (ver supabase/migrations) y la aplicación todavía no tiene autenticación.
+ * Hasta que se implemente ese paso, este cliente es el único camino de
+ * acceso a los datos: al usar la service_role key salta RLS de forma
+ * controlada, en vez de abrir el acceso público a través de la clave
+ * "anon" (que sí se expone en el navegador).
+ */
+export function createAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en las variables de entorno (revisa .env.local).",
+    );
+  }
+
+  return createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+
+===== src/lib/supabase/client.ts =====
+import { createBrowserClient } from "@supabase/ssr";
+
+/**
+ * Crea un cliente de Supabase para usar en el navegador (Client Components).
+ *
+ * Ejemplo de uso:
+ *   "use client";
+ *   import { createClient } from "@/lib/supabase/client";
+ *   const supabase = createClient();
+ */
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
+
+===== src/lib/supabase/server.ts =====
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+/**
+ * Crea un cliente de Supabase para usar en el servidor
+ * (Server Components, Route Handlers y Server Actions).
+ *
+ * Debe crearse una instancia nueva en cada request; no se debe
+ * reutilizar entre peticiones ni guardar en una variable global.
+ *
+ * Ejemplo de uso:
+ *   import { createClient } from "@/lib/supabase/server";
+ *   const supabase = await createClient();
+ */
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // `setAll` puede fallar si se llama desde un Server Component.
+            // Esto es seguro de ignorar aquí porque, cuando llegue el
+            // middleware de sesión (paso de autenticación), será quien
+            // se encargue de refrescar las cookies.
+          }
+        },
+      },
+    },
+  );
+}
+
+
+===== src/lib/types.ts =====
+export type Color = {
+  id: string;
+  name: string;
+  hex_code: string | null;
+};
+
+export type Location = {
+  id: string;
+  name: string;
+  parent_id: string | null;
+};
+
+export type Piece = {
+  id: string;
+  lego_id: string;
+  name: string;
+  description: string | null;
+  color_id: string;
+  quantity: number;
+  location_id: string | null;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Pieza con el color resuelto y una etiqueta de ubicación legible. */
+export type PieceWithDetails = Piece & {
+  color: Color;
+  locationLabel: string | null;
+};
+
+
+===== public/ (solo listado de archivos) =====
+.gitkeep

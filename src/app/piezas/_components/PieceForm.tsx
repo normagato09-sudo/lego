@@ -2,19 +2,14 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import type { Color, Location } from "@/lib/types";
+import type { Color, Location, Piece } from "@/lib/types";
 import type { PieceFormState } from "../actions";
 import { PiecePhotoField } from "./PiecePhotoField";
 
-type DefaultValues = {
-  lego_id: string;
-  name: string;
-  description: string | null;
-  color_id: string;
-  location_id: string | null;
-  quantity: number;
-  image_url?: string | null;
-};
+type DefaultValues = Pick<
+  Piece,
+  "lego_id" | "name" | "description" | "color_id" | "location_id" | "quantity" | "image_url"
+>;
 
 type Props = {
   action: (prevState: PieceFormState, formData: FormData) => Promise<PieceFormState>;

@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic'; 
+export const dynamic = 'force-dynamic';
+
 import { notFound } from "next/navigation";
 import { getPieceById, getColors, getLocations } from "@/lib/pieces";
 import { updatePiece } from "../../actions";
@@ -16,9 +17,7 @@ export default async function EditPiecePage({
     getLocations(),
   ]);
   if (!piece) notFound();
-
   const action = updatePiece.bind(null, id);
-
   return (
     <div className="mx-auto max-w-lg px-5 py-8">
       <h1 className="mb-1 text-xl font-semibold text-ink">Editar pieza</h1>
@@ -36,6 +35,7 @@ export default async function EditPiecePage({
           color_id: piece.color_id,
           location_id: piece.location_id,
           quantity: piece.quantity,
+          image_url: piece.image_url,
         }}
         submitLabel="Guardar cambios"
       />

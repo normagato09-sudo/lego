@@ -17,10 +17,19 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
     <div className="flex flex-col rounded-lg border border-line bg-paper p-3">
       <Link
         href={`/piezas/${piece.id}`}
-        className="mb-2 flex h-24 items-center justify-center rounded-md"
+        className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-md"
         style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
       >
-        {studIcon}
+        {piece.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={piece.image_url}
+            alt={piece.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          studIcon
+        )}
       </Link>
 
       <div className="flex items-start justify-between gap-2">

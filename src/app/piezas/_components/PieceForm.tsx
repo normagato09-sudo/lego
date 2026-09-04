@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { Color, Location } from "@/lib/types";
 import type { PieceFormState } from "../actions";
+import { PiecePhotoField } from "./PiecePhotoField";
 
 type DefaultValues = {
   lego_id: string;
@@ -12,6 +13,7 @@ type DefaultValues = {
   color_id: string;
   location_id: string | null;
   quantity: number;
+  image_url?: string | null;
 };
 
 type Props = {
@@ -68,6 +70,8 @@ export function PieceForm({ action, colors, locations, defaultValues, submitLabe
           {state.error}
         </p>
       )}
+
+      <PiecePhotoField initialUrl={defaultValues?.image_url ?? null} />
 
       <Field label="ID de LEGO" error={state.fieldErrors?.lego_id}>
         <input

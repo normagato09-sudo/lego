@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "./Button";
 
 export function SiteHeader() {
   return (
@@ -13,12 +14,12 @@ export function SiteHeader() {
           Mi Colección LEGO
         </Link>
         <nav className="flex gap-1 text-sm">
-          <Link href="/" className="btn-ghost">
+          <Button href="/" variant="ghost">
             Inicio
-          </Link>
-          <Link href="/piezas" className="btn-ghost">
+          </Button>
+          <Button href="/piezas" variant="ghost">
             Piezas
-          </Link>
+          </Button>
         </nav>
         <div className="ml-auto">
           <ThemeToggle />

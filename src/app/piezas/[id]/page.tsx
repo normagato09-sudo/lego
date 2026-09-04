@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPieceById } from "@/lib/pieces";
 import { ColorSwatch } from "@/components/ColorSwatch";
+import { Card } from "@/components/Card";
+import { Button } from "@/components/Button";
 import { DeletePieceButton } from "../_components/DeletePieceButton";
 import { QuantityStepper } from "../_components/QuantityStepper";
 
@@ -18,7 +20,7 @@ export default async function PieceDetailPage({
       <Link href="/piezas" className="text-sm text-steel hover:text-ink">
         ← Volver a piezas
       </Link>
-      <div className="mt-4 flex flex-col gap-5 rounded-lg border border-line bg-paper p-6 sm:flex-row">
+      <Card padding="lg" className="mt-4 flex flex-col gap-5 sm:flex-row">
         <div
           className="flex h-32 w-32 shrink-0 items-center justify-center self-center overflow-hidden rounded-md sm:self-start"
           style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
@@ -48,15 +50,13 @@ export default async function PieceDetailPage({
             <dd className="text-ink">{piece.locationLabel ?? "Sin ubicación"}</dd>
           </dl>
         </div>
-      </div>
-      <div className="mt-6 rounded-lg border border-line bg-paper p-5">
+      </Card>
+      <Card padding="md" className="mt-6">
         <h2 className="mb-3 text-sm font-semibold text-ink">Cantidad disponible</h2>
         <QuantityStepper id={piece.id} quantity={piece.quantity} />
-      </div>
+      </Card>
       <div className="mt-6 flex gap-2">
-        <Link href={`/piezas/${piece.id}/editar`} className="btn">
-          Editar
-        </Link>
+        <Button href={`/piezas/${piece.id}/editar`}>Editar</Button>
         <DeletePieceButton id={piece.id} name={piece.name} />
       </div>
     </div>

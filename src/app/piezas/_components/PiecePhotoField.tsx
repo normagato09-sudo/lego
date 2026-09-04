@@ -1,15 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-const placeholderIcon = (
-  <svg viewBox="0 0 40 28" className="h-8 w-11 text-ink-soft/40" aria-hidden="true">
-    <rect x="2" y="8" width="36" height="18" rx="2" fill="currentColor" />
-    <circle cx="12" cy="8" r="4" fill="currentColor" />
-    <circle cx="20" cy="8" r="4" fill="currentColor" />
-    <circle cx="28" cy="8" r="4" fill="currentColor" />
-  </svg>
-);
+import { Button } from "@/components/Button";
+import { PieceIcon } from "@/components/PieceIcon";
 
 type Props = {
   initialUrl?: string | null;
@@ -61,7 +54,7 @@ export function PiecePhotoField({ initialUrl = null }: Props) {
               className="h-full w-full object-cover"
             />
           ) : (
-            placeholderIcon
+            <PieceIcon className="h-8 w-11 text-ink-soft/40" />
           )}
         </div>
         <div className="flex flex-col gap-1.5">
@@ -76,13 +69,15 @@ export function PiecePhotoField({ initialUrl = null }: Props) {
             />
           </label>
           {preview && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={handleRemove}
-              className="btn-ghost text-xs text-red-status"
+              className="text-red-status"
             >
               Eliminar foto
-            </button>
+            </Button>
           )}
         </div>
       </div>

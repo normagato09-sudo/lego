@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { Color, Location, Piece } from "@/lib/types";
 import type { PieceFormState } from "../actions";
+import { Button } from "@/components/Button";
 import { PiecePhotoField } from "./PiecePhotoField";
 
 type DefaultValues = Pick<
@@ -30,9 +31,9 @@ function groupLocations(locations: Location[]) {
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="btn btn-primary">
+    <Button type="submit" disabled={pending} variant="primary">
       {pending ? "Guardando..." : label}
-    </button>
+    </Button>
   );
 }
 

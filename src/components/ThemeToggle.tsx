@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "./Button";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -22,18 +23,23 @@ export function ThemeToggle() {
 
   // Evita parpadeo/desajuste mientras no sabemos aún el tema real en el cliente.
   if (!mounted) {
-    return <button className="btn-ghost text-xs" aria-label="Cambiar tema" disabled>🌙</button>;
+    return (
+      <Button variant="ghost" size="sm" aria-label="Cambiar tema" disabled>
+        🌙
+      </Button>
+    );
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={toggleTheme}
-      className="btn-ghost text-xs"
       aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
       title={isDark ? "Modo claro" : "Modo oscuro"}
     >
       {isDark ? "☀️" : "🌙"}
-    </button>
+    </Button>
   );
 }

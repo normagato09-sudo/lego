@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'; 
-import Link from "next/link";
 import { getPieces } from "@/lib/pieces";
+import { Button } from "@/components/Button";
 import { PieceCard } from "./_components/PieceCard";
 
 export default async function PiezasPage() {
@@ -15,17 +15,17 @@ export default async function PiezasPage() {
             {pieces.length} {pieces.length === 1 ? "pieza" : "piezas"} en tu inventario
           </p>
         </div>
-        <Link href="/piezas/nueva" className="btn btn-primary">
+        <Button href="/piezas/nueva" variant="primary">
           + Añadir pieza
-        </Link>
+        </Button>
       </div>
 
       {pieces.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line-strong px-6 py-14 text-center">
           <p className="mb-4 text-sm text-steel">Todavía no tienes piezas en tu inventario.</p>
-          <Link href="/piezas/nueva" className="btn btn-primary">
+          <Button href="/piezas/nueva" variant="primary">
             Añadir la primera pieza
-          </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

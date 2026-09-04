@@ -1,20 +1,14 @@
 import Link from "next/link";
 import type { PieceWithDetails } from "@/lib/types";
 import { ColorSwatch } from "@/components/ColorSwatch";
+import { Card } from "@/components/Card";
+import { Button } from "@/components/Button";
+import { PieceIcon } from "@/components/PieceIcon";
 import { DeletePieceButton } from "./DeletePieceButton";
-
-const studIcon = (
-  <svg viewBox="0 0 40 28" className="h-6 w-9 text-ink-soft/40" aria-hidden="true">
-    <rect x="2" y="8" width="36" height="18" rx="2" fill="currentColor" />
-    <circle cx="12" cy="8" r="4" fill="currentColor" />
-    <circle cx="20" cy="8" r="4" fill="currentColor" />
-    <circle cx="28" cy="8" r="4" fill="currentColor" />
-  </svg>
-);
 
 export function PieceCard({ piece }: { piece: PieceWithDetails }) {
   return (
-    <div className="flex flex-col rounded-lg border border-line bg-paper p-3">
+    <Card padding="sm" className="flex flex-col">
       <Link
         href={`/piezas/${piece.id}`}
         className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-md"
@@ -28,7 +22,7 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          studIcon
+          <PieceIcon />
         )}
       </Link>
 
@@ -50,14 +44,14 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1 text-xs">
-        <Link href={`/piezas/${piece.id}`} className="btn-ghost text-xs">
+        <Button href={`/piezas/${piece.id}`} variant="ghost" size="sm">
           Ver detalle
-        </Link>
-        <Link href={`/piezas/${piece.id}/editar`} className="btn-ghost text-xs">
+        </Button>
+        <Button href={`/piezas/${piece.id}/editar`} variant="ghost" size="sm">
           Editar
-        </Link>
+        </Button>
         <DeletePieceButton id={piece.id} name={piece.name} compact />
       </div>
-    </div>
+    </Card>
   );
 }

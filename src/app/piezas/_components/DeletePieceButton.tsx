@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/Button";
 import { deletePiece } from "../actions";
 
 type Props = {
@@ -22,12 +23,15 @@ export function DeletePieceButton({ id, name, compact = false }: Props) {
       }}
     >
       <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
-        className={compact ? "btn-ghost text-xs text-red-status" : "btn btn-danger"}
-      >
-        Eliminar
-      </button>
+      {compact ? (
+        <Button type="submit" variant="ghost" size="sm" className="text-red-status">
+          Eliminar
+        </Button>
+      ) : (
+        <Button type="submit" variant="danger">
+          Eliminar
+        </Button>
+      )}
     </form>
   );
 }

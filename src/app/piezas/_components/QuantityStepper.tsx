@@ -2,14 +2,15 @@
 
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { Button } from "@/components/Button";
 import { updateQuantity, type QuantityState } from "../actions";
 
 function SaveButton() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className="btn" disabled={pending}>
+    <Button type="submit" disabled={pending}>
       {pending ? "Guardando..." : "Guardar"}
-    </button>
+    </Button>
   );
 }
 
@@ -20,14 +21,14 @@ export function QuantityStepper({ id, quantity }: { id: string; quantity: number
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-3">
-      <button
+      <Button
         type="button"
-        className="btn h-9 w-9 p-0 text-base"
+        size="icon"
         onClick={() => setValue((v) => Math.max(0, v - 1))}
         aria-label="Restar una unidad"
       >
         −
-      </button>
+      </Button>
       <input
         type="number"
         name="quantity"
@@ -40,14 +41,14 @@ export function QuantityStepper({ id, quantity }: { id: string; quantity: number
         }}
         className="input w-24 text-center"
       />
-      <button
+      <Button
         type="button"
-        className="btn h-9 w-9 p-0 text-base"
+        size="icon"
         onClick={() => setValue((v) => v + 1)}
         aria-label="Sumar una unidad"
       >
         +
-      </button>
+      </Button>
       <SaveButton />
       {state.error && <span className="text-xs text-red-status">{state.error}</span>}
     </form>

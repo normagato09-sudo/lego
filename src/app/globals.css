@@ -105,4 +105,28 @@ h3 {
     background: var(--color-red-status);
     color: #fff;
   }
+  .dark {
+  color-scheme: dark;
+  --color-ink: #eef0ee;
+  --color-ink-soft: #c3c7c2;
+  --color-steel: #9ba39c;
+  --color-steel-light: #6c716b;
+  --color-fog: #1b1d1c;
+  --color-paper: #242726;
+  --color-line: #363a38;
+  --color-line-strong: #4a4e4b;
+  --color-brick: #c4281c;
+  --color-brick-dark: #e2483a;
+  --color-brick-tint: #3a1e1c;
+  --color-green: #46b876;
+  --color-green-tint: #16231b;
+  --color-amber: #e0a53c;
+  --color-amber-tint: #2b2013;
+  --color-red-status: #ff6b5c;
+  --color-red-tint: #2a1613;
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
 }

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import { SiteHeader } from "@/components/SiteHeader";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -25,6 +26,23 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "LEGO Inventory",
   description: "Organiza tu colección personal de piezas LEGO",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "LEGO Inventory",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#c4281c",
 };
 
 const themeInitScript = `(function(){
@@ -35,6 +53,14 @@ const themeInitScript = `(function(){
       document.documentElement.classList.add('dark');
     }
   } catch (e) {}
+})();`;
+
+const swRegisterScript = `(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    });
+  }
 })();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -50,10 +76,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: swRegisterScript }}
+        />
       </head>
       <body className="flex min-h-full flex-col">
         <SiteHeader />
         <div className="flex-1">{children}</div>
+        <InstallPrompt />
       </body>
     </html>
   );

@@ -1,13 +1,26 @@
 export const dynamic = 'force-dynamic'; 
-import Link from "next/link";
 import { getPieces } from "@/lib/pieces";
-import { PieceCard } from "./_components/PieceCard";
+import { calculateInventoryStats } from "@/lib/stats";
+import { Button } from "@/components/Button";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { StatCard } from "@/components/StatCard";
+import { PiecesExplorer } from "./_components/PiecesExplorer";
 
-export default async function PiezasPage() {
-  const pieces = await getPieces();
+export default async function PiezasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deleteError?: string }>;
+}) {
+  const [pieces, { deleteError }] = await Promise.all([getPieces(), searchParams]);
+  const stats = calculateInventoryStats(pieces);
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-8">
+      {deleteError && (
+        <div className="mb-4">
+          <ErrorBanner message={deleteError} />
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-ink">Piezas</h1>
@@ -15,24 +28,27 @@ export default async function PiezasPage() {
             {pieces.length} {pieces.length === 1 ? "pieza" : "piezas"} en tu inventario
           </p>
         </div>
-        <Link href="/piezas/nueva" className="btn btn-primary">
+        <Button href="/piezas/nueva" variant="primary">
           + Añadir pieza
-        </Link>
+        </Button>
       </div>
 
       {pieces.length === 0 ? (
         <div className="rounded-lg border border-dashed border-line-strong px-6 py-14 text-center">
           <p className="mb-4 text-sm text-steel">Todavía no tienes piezas en tu inventario.</p>
-          <Link href="/piezas/nueva" className="btn btn-primary">
+          <Button href="/piezas/nueva" variant="primary">
             Añadir la primera pieza
-          </Link>
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {pieces.map((piece) => (
-            <PieceCard key={piece.id} piece={piece} />
-          ))}
-        </div>
+        <>
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatCard title="Piezas totales" value={stats.totalPieces} />
+            <StatCard title="Piezas únicas" value={stats.totalUniquePieces} />
+            <StatCard title="Disponibles" value={stats.piecesAvailable} />
+          </div>
+          <PiecesExplorer pieces={pieces} />
+        </>
       )}
     </div>
   );

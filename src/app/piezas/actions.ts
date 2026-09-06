@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { friendlyDbError } from "./db-errors";
 
 export type PieceFieldErrors = Partial<
   Record<"lego_id" | "name" | "color_id" | "quantity", string>
@@ -49,20 +50,6 @@ function parsePieceForm(formData: FormData): ParsedPiece {
     quantity,
     fieldErrors,
   };
-}
-
-/** Traduce errores conocidos de Postgres a mensajes legibles en español. */
-function friendlyDbError(error: { code?: string; message: string }): string {
-  if (error.code === "23505") {
-    return "Ya existe una pieza con ese ID, color y ubicación. Si quieres sumar unidades, edita esa pieza en vez de crear una nueva.";
-  }
-  if (error.code === "23503") {
-    return "No se puede completar la operación porque la pieza está relacionada con otro dato (por ejemplo, un proyecto).";
-  }
-  if (error.code === "23514") {
-    return "La cantidad no puede ser negativa.";
-  }
-  return `No se pudo guardar la pieza: ${error.message}`;
 }
 
 export async function createPiece(
@@ -132,12 +119,17 @@ export async function deletePiece(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
+  // Dónde quedarse si el borrado falla: el detalle si se borra desde ahí,
+  // o el listado si se borra desde una PieceCard. Sin esto, el usuario
+  // borrando desde /piezas acababa en /piezas/[id] sin explicación.
+  const redirectOnError = String(formData.get("redirect_on_error") ?? "/piezas");
+
   const supabase = createAdminClient();
   const { error } = await supabase.from("pieces").delete().eq("id", id);
 
   if (error) {
     console.error("Error al eliminar la pieza:", error.message);
-    redirect(`/piezas/${id}?error=delete`);
+    redirect(`${redirectOnError}?deleteError=${encodeURIComponent(friendlyDbError(error))}`);
   }
 
   revalidatePath("/piezas");

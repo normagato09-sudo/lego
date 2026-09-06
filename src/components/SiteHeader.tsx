@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "./Button";
 
 export function SiteHeader() {
   return (
     <header className="border-b border-line bg-paper">
-      <div className="mx-auto flex max-w-5xl items-center gap-6 px-5 py-3.5">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3.5">
         <Link
           href="/"
           className="flex items-center gap-2 font-display text-[15px] font-semibold text-ink"
@@ -12,13 +14,16 @@ export function SiteHeader() {
           Mi Colección LEGO
         </Link>
         <nav className="flex gap-1 text-sm">
-          <Link href="/" className="btn-ghost">
+          <Button href="/" variant="ghost">
             Inicio
-          </Link>
-          <Link href="/piezas" className="btn-ghost">
+          </Button>
+          <Button href="/piezas" variant="ghost">
             Piezas
-          </Link>
+          </Button>
         </nav>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

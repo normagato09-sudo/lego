@@ -1,26 +1,29 @@
 import Link from "next/link";
 import type { PieceWithDetails } from "@/lib/types";
 import { ColorSwatch } from "@/components/ColorSwatch";
+import { Card } from "@/components/Card";
+import { Button } from "@/components/Button";
+import { PieceIcon } from "@/components/PieceIcon";
 import { DeletePieceButton } from "./DeletePieceButton";
-
-const studIcon = (
-  <svg viewBox="0 0 40 28" className="h-6 w-9 text-ink-soft/40" aria-hidden="true">
-    <rect x="2" y="8" width="36" height="18" rx="2" fill="currentColor" />
-    <circle cx="12" cy="8" r="4" fill="currentColor" />
-    <circle cx="20" cy="8" r="4" fill="currentColor" />
-    <circle cx="28" cy="8" r="4" fill="currentColor" />
-  </svg>
-);
 
 export function PieceCard({ piece }: { piece: PieceWithDetails }) {
   return (
-    <div className="flex flex-col rounded-lg border border-line bg-paper p-3">
+    <Card padding="sm" className="flex flex-col">
       <Link
         href={`/piezas/${piece.id}`}
-        className="mb-2 flex h-24 items-center justify-center rounded-md"
+        className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-md"
         style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
       >
-        {studIcon}
+        {piece.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={piece.image_url}
+            alt={piece.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <PieceIcon />
+        )}
       </Link>
 
       <div className="flex items-start justify-between gap-2">
@@ -36,19 +39,21 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
 
       <div className="mt-2 flex items-center gap-1.5 text-xs text-steel">
         <ColorSwatch color={piece.color} size={10} />
-        <span>{piece.color.name}</span>
-        {piece.locationLabel && <span className="truncate">· {piece.locationLabel}</span>}
+        <span className="shrink-0">{piece.color.name}</span>
+        {piece.locationLabel && (
+          <span className="min-w-0 flex-1 truncate">· {piece.locationLabel}</span>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1 text-xs">
-        <Link href={`/piezas/${piece.id}`} className="btn-ghost text-xs">
+        <Button href={`/piezas/${piece.id}`} variant="ghost" size="sm">
           Ver detalle
-        </Link>
-        <Link href={`/piezas/${piece.id}/editar`} className="btn-ghost text-xs">
+        </Button>
+        <Button href={`/piezas/${piece.id}/editar`} variant="ghost" size="sm">
           Editar
-        </Link>
-        <DeletePieceButton id={piece.id} name={piece.name} compact />
+        </Button>
+        <DeletePieceButton id={piece.id} name={piece.name} compact redirectOnError="/piezas" />
       </div>
-    </div>
+    </Card>
   );
 }

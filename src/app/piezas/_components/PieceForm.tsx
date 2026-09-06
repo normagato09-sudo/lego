@@ -2,17 +2,16 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import type { Color, Location } from "@/lib/types";
+import type { Color, Location, Piece } from "@/lib/types";
 import type { PieceFormState } from "../actions";
+import { Button } from "@/components/Button";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { PiecePhotoField } from "./PiecePhotoField";
 
-type DefaultValues = {
-  lego_id: string;
-  name: string;
-  description: string | null;
-  color_id: string;
-  location_id: string | null;
-  quantity: number;
-};
+type DefaultValues = Pick<
+  Piece,
+  "lego_id" | "name" | "description" | "color_id" | "location_id" | "quantity" | "image_url"
+>;
 
 type Props = {
   action: (prevState: PieceFormState, formData: FormData) => Promise<PieceFormState>;
@@ -33,9 +32,9 @@ function groupLocations(locations: Location[]) {
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} className="btn btn-primary">
+    <Button type="submit" disabled={pending} variant="primary">
       {pending ? "Guardando..." : label}
-    </button>
+    </Button>
   );
 }
 
@@ -63,11 +62,9 @@ export function PieceForm({ action, colors, locations, defaultValues, submitLabe
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
-      {state.error && (
-        <p className="rounded-md border border-red-status/30 bg-red-tint px-3 py-2 text-sm text-red-status">
-          {state.error}
-        </p>
-      )}
+      {state.error && <ErrorBanner message={state.error} />}
+
+      <PiecePhotoField initialUrl={defaultValues?.image_url ?? null} />
 
       <Field label="ID de LEGO" error={state.fieldErrors?.lego_id}>
         <input

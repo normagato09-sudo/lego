@@ -8,7 +8,17 @@ import { cookies } from "next/headers";
  * Debe crearse una instancia nueva en cada request; no se debe
  * reutilizar entre peticiones ni guardar en una variable global.
  *
- * Ejemplo de uso:
+ * ⚠️ NO USADO TODAVÍA, A PROPÓSITO: hoy toda la app lee/escribe con
+ * `createAdminClient` (ver src/lib/supabase/admin.ts), que usa la clave
+ * "service_role" y salta RLS porque todavía no hay autenticación. Este
+ * cliente usa la clave "anon" ligada a la sesión del usuario; como todas
+ * las tablas tienen RLS activado sin políticas (ver supabase/migrations),
+ * cualquier lectura o escritura hecha con él será denegada (0 filas o
+ * error de permisos) hasta que exista autenticación real y se definan esas
+ * políticas. Está pensado para conectarse en el paso en que se implemente
+ * el login, no antes.
+ *
+ * Ejemplo de uso (cuando corresponda):
  *   import { createClient } from "@/lib/supabase/server";
  *   const supabase = await createClient();
  */

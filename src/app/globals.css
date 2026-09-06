@@ -40,6 +40,7 @@ h3 {
 @layer components {
   .input {
     width: 100%;
+    min-height: 2.25rem;
     border: 1px solid var(--color-line);
     border-radius: 8px;
     background: var(--color-paper);
@@ -58,6 +59,7 @@ h3 {
     align-items: center;
     justify-content: center;
     gap: 0.375rem;
+    min-height: 2.25rem;
     border-radius: 6px;
     border: 1px solid var(--color-line-strong);
     background: var(--color-paper);
@@ -85,6 +87,10 @@ h3 {
   }
 
   .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
     border-color: transparent;
     background: transparent;
     padding: 0.375rem 0.625rem;
@@ -105,4 +111,28 @@ h3 {
     background: var(--color-red-status);
     color: #fff;
   }
+  .dark {
+  color-scheme: dark;
+  --color-ink: #eef0ee;
+  --color-ink-soft: #c3c7c2;
+  --color-steel: #9ba39c;
+  --color-steel-light: #6c716b;
+  --color-fog: #1b1d1c;
+  --color-paper: #242726;
+  --color-line: #363a38;
+  --color-line-strong: #4a4e4b;
+  --color-brick: #c4281c;
+  --color-brick-dark: #e2483a;
+  --color-brick-tint: #3a1e1c;
+  --color-green: #46b876;
+  --color-green-tint: #16231b;
+  --color-amber: #e0a53c;
+  --color-amber-tint: #2b2013;
+  --color-red-status: #ff6b5c;
+  --color-red-tint: #2a1613;
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
 }

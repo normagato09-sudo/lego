@@ -13,6 +13,7 @@ export type Location = {
 export type Piece = {
   id: string;
   lego_id: string;
+  element_id: string | null;
   name: string;
   description: string | null;
   color_id: string;

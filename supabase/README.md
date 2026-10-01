@@ -35,3 +35,12 @@ No contiene datos reales ni claves de ningún tipo.
 necesaria porque `pieces.color_id` es obligatorio y la tabla `colors` se
 creó vacía — sin esto no se puede crear ninguna pieza. Aplícala igual que
 la primera (SQL Editor o `supabase db push`).
+
+## Tercera migración (element ID y fotos)
+
+`migrations/20261001090000_element_id_and_piece_images.sql` añade la
+columna opcional `pieces.element_id` (ID de pieza de LEGO) y crea el bucket
+de Storage `piece-images` (lectura pública, máx. 4 MB, solo imágenes) donde
+se guardan las fotos de las piezas. La subida y el borrado se hacen desde el
+servidor con la clave service_role. Aplícala igual que las anteriores, antes
+de desplegar el código que la usa.

@@ -57,6 +57,12 @@ export default async function PieceDetailPage({
               <ColorSwatch color={piece.color} size={12} />
               {piece.color.name}
             </dd>
+            {piece.element_id && (
+              <>
+                <dt className="text-steel">ID de pieza</dt>
+                <dd className="font-mono text-ink">{piece.element_id}</dd>
+              </>
+            )}
             <dt className="text-steel">Ubicación</dt>
             <dd className="text-ink">{piece.locationLabel ?? "Sin ubicación"}</dd>
           </dl>

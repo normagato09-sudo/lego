@@ -6,17 +6,48 @@ import { PieceIcon } from "@/components/PieceIcon";
 
 type Props = {
   initialUrl?: string | null;
+  error?: string;
 };
 
+const MAX_SIDE = 1600;
+const QUALITY = 0.82;
+
 /**
- * Campo de foto de la pieza.
- * Por ahora es solo previsualización en memoria del navegador (URL.createObjectURL),
- * sin conexión a base de datos ni a almacenamiento externo. Preparado para conectarse
- * más adelante (por ejemplo, subiendo a Supabase Storage y guardando la URL en image_url).
+ * Redimensiona la imagen a un máximo de MAX_SIDE px por lado y la comprime a
+ * WebP (o JPEG si el navegador no sabe codificar WebP), para que las fotos
+ * del móvil no superen el límite de subida.
  */
-export function PiecePhotoField({ initialUrl = null }: Props) {
+async function compressImage(file: File): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const toBlob = (type: string) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, QUALITY));
+  // Si no soporta WebP, toBlob devuelve PNG: en ese caso se usa JPEG.
+  let blob = await toBlob("image/webp");
+  if (!blob || blob.type !== "image/webp") blob = await toBlob("image/jpeg");
+  if (!blob) throw new Error("No se pudo comprimir la imagen.");
+
+  const ext = blob.type === "image/webp" ? "webp" : "jpg";
+  const baseName = file.name.replace(/\.[^.]+$/, "") || "foto";
+  return new File([blob], `${baseName}.${ext}`, { type: blob.type });
+}
+
+/**
+ * Campo de foto de la pieza. La foto se comprime en el navegador y se envía
+ * con el formulario en el campo "photo"; la server action la sube a Supabase
+ * Storage. Si se quita una foto ya guardada, se envía remove_photo=1.
+ */
+export function PiecePhotoField({ initialUrl = null, error }: Props) {
   const [preview, setPreview] = useState<string | null>(initialUrl);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,19 +56,49 @@ export function PiecePhotoField({ initialUrl = null }: Props) {
     };
   }, [objectUrl]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  // React vacía el formulario al terminar la action (también si devuelve
+  // error): se vuelve al estado inicial para que la vista previa no muestre
+  // una foto que ya no se enviaría.
+  useEffect(() => {
+    const form = inputRef.current?.form;
+    if (!form) return;
+    function handleReset() {
+      setObjectUrl(null);
+      setPreview(initialUrl);
+      setRemoved(false);
+    }
+    form.addEventListener("reset", handleReset);
+    return () => form.removeEventListener("reset", handleReset);
+  }, [initialUrl]);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    const url = URL.createObjectURL(file);
+
+    let finalFile = file;
+    setProcessing(true);
+    try {
+      finalFile = await compressImage(file);
+      const dt = new DataTransfer();
+      dt.items.add(finalFile);
+      input.files = dt.files;
+    } catch {
+      // Si no se puede comprimir, se envía el original; el servidor valida el tamaño.
+    } finally {
+      setProcessing(false);
+    }
+
+    const url = URL.createObjectURL(finalFile);
     setObjectUrl(url);
     setPreview(url);
+    setRemoved(false);
   }
 
   function handleRemove() {
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
     setObjectUrl(null);
     setPreview(null);
+    setRemoved(initialUrl !== null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -59,12 +120,14 @@ export function PiecePhotoField({ initialUrl = null }: Props) {
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="btn-ghost cursor-pointer text-xs">
-            {preview ? "Cambiar foto" : "Subir foto"}
+            {processing ? "Procesando..." : preview ? "Cambiar foto" : "Subir foto"}
             <input
               ref={inputRef}
+              name="photo"
               type="file"
               accept="image/*"
               onChange={handleFileChange}
+              disabled={processing}
               className="hidden"
             />
           </label>
@@ -81,9 +144,8 @@ export function PiecePhotoField({ initialUrl = null }: Props) {
           )}
         </div>
       </div>
-      <span className="text-xs text-steel">
-        Por ahora la foto solo se previsualiza en este dispositivo; todavía no se guarda.
-      </span>
+      {removed && <input type="hidden" name="remove_photo" value="1" />}
+      {error && <span className="text-xs text-red-status">{error}</span>}
     </div>
   );
 }

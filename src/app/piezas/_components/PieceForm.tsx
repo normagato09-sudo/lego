@@ -10,7 +10,7 @@ import { PiecePhotoField } from "./PiecePhotoField";
 
 type DefaultValues = Pick<
   Piece,
-  "lego_id" | "name" | "description" | "color_id" | "location_id" | "quantity" | "image_url"
+  "lego_id" | "element_id" | "name" | "description" | "color_id" | "location_id" | "quantity" | "image_url"
 >;
 
 type Props = {
@@ -64,15 +64,27 @@ export function PieceForm({ action, colors, locations, defaultValues, submitLabe
     <form action={formAction} className="flex flex-col gap-5">
       {state.error && <ErrorBanner message={state.error} />}
 
-      <PiecePhotoField initialUrl={defaultValues?.image_url ?? null} />
+      <PiecePhotoField
+        initialUrl={defaultValues?.image_url ?? null}
+        error={state.fieldErrors?.photo}
+      />
 
-      <Field label="ID de LEGO" error={state.fieldErrors?.lego_id}>
+      <Field label="ID de diseño" error={state.fieldErrors?.lego_id}>
         <input
           name="lego_id"
           defaultValue={defaultValues?.lego_id}
           required
           className="input"
           placeholder="p. ej. 3001"
+        />
+      </Field>
+
+      <Field label="ID de pieza (Element ID, opcional)">
+        <input
+          name="element_id"
+          defaultValue={defaultValues?.element_id ?? ""}
+          className="input"
+          placeholder="p. ej. 300121"
         />
       </Field>
 

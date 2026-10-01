@@ -30,6 +30,7 @@ export default async function EditPiecePage({
         locations={locations}
         defaultValues={{
           lego_id: piece.lego_id,
+          element_id: piece.element_id,
           name: piece.name,
           description: piece.description,
           color_id: piece.color_id,

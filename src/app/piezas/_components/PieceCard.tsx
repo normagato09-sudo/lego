@@ -27,7 +27,10 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
       </Link>
 
       <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-xs text-steel">{piece.lego_id}</span>
+        <span className="font-mono text-xs text-steel">
+          {piece.lego_id}
+          {piece.element_id && ` · ${piece.element_id}`}
+        </span>
         <span className="rounded-full bg-fog px-2 py-0.5 text-xs font-semibold text-ink">
           {piece.quantity}
         </span>

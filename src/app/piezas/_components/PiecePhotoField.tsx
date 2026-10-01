@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Area } from "react-easy-crop";
 import { Button } from "@/components/Button";
 import { PieceIcon } from "@/components/PieceIcon";
+import { PhotoCropper } from "./PhotoCropper";
 
 type Props = {
   initialUrl?: string | null;
@@ -12,19 +14,41 @@ type Props = {
 const MAX_SIDE = 1600;
 const QUALITY = 0.82;
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("No se pudo cargar la imagen."));
+    image.src = src;
+  });
+}
+
 /**
- * Redimensiona la imagen a un máximo de MAX_SIDE px por lado y la comprime a
- * WebP (o JPEG si el navegador no sabe codificar WebP), para que las fotos
- * del móvil no superen el límite de subida.
+ * Dibuja solo el área recortada (con la rotación aplicada) directamente en un
+ * lienzo de como mucho MAX_SIDE px y la comprime a WebP (o JPEG si el
+ * navegador no codifica WebP). No crea un lienzo intermedio del tamaño de la
+ * foto rotada, que en iOS puede pasar del límite de memoria del canvas.
  */
-async function compressImage(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+async function cropAndCompress(src: string, area: Area, rotation: number): Promise<File> {
+  const img = await loadImage(src);
+
+  const rad = (rotation * Math.PI) / 180;
+  // Caja que ocupa la imagen rotada: el área de react-easy-crop está en ese espacio.
+  const boxW = Math.abs(Math.cos(rad) * img.width) + Math.abs(Math.sin(rad) * img.height);
+  const boxH = Math.abs(Math.sin(rad) * img.width) + Math.abs(Math.cos(rad) * img.height);
+
+  const size = Math.max(1, Math.round(Math.min(area.width, MAX_SIDE)));
+  const scale = size / area.width;
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ffffff"; // esquinas vacías al rotar
+  ctx.fillRect(0, 0, size, size);
+  ctx.scale(scale, scale);
+  ctx.translate(-area.x + boxW / 2, -area.y + boxH / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
   const toBlob = (type: string) =>
     new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, QUALITY));
@@ -34,21 +58,23 @@ async function compressImage(file: File): Promise<File> {
   if (!blob) throw new Error("No se pudo comprimir la imagen.");
 
   const ext = blob.type === "image/webp" ? "webp" : "jpg";
-  const baseName = file.name.replace(/\.[^.]+$/, "") || "foto";
-  return new File([blob], `${baseName}.${ext}`, { type: blob.type });
+  return new File([blob], `pieza.${ext}`, { type: blob.type });
 }
 
 /**
- * Campo de foto de la pieza. La foto se comprime en el navegador y se envía
- * con el formulario en el campo "photo"; la server action la sube a Supabase
- * Storage. Si se quita una foto ya guardada, se envía remove_photo=1.
+ * Campo de foto de la pieza. La foto se hace con la cámara o se elige de la
+ * galería, se recorta en PhotoCropper y se comprime en el navegador. El
+ * resultado va en el input oculto "photo"; la server action lo sube a
+ * Supabase Storage. Si se quita una foto ya guardada, se envía remove_photo=1.
  */
 export function PiecePhotoField({ initialUrl = null, error }: Props) {
   const [preview, setPreview] = useState<string | null>(initialUrl);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [removed, setRemoved] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [cropError, setCropError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
@@ -56,11 +82,17 @@ export function PiecePhotoField({ initialUrl = null, error }: Props) {
     };
   }, [objectUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc);
+    };
+  }, [cropSrc]);
+
   // React vacía el formulario al terminar la action (también si devuelve
   // error): se vuelve al estado inicial para que la vista previa no muestre
   // una foto que ya no se enviaría.
   useEffect(() => {
-    const form = inputRef.current?.form;
+    const form = photoInputRef.current?.form;
     if (!form) return;
     function handleReset() {
       setObjectUrl(null);
@@ -71,35 +103,41 @@ export function PiecePhotoField({ initialUrl = null, error }: Props) {
     return () => form.removeEventListener("reset", handleReset);
   }, [initialUrl]);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const input = e.target;
-    const file = input.files?.[0];
+  function handlePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Se vacía para que elegir otra vez la misma foto vuelva a abrir el editor.
+    e.target.value = "";
     if (!file) return;
+    setCropError(null);
+    setCropSrc(URL.createObjectURL(file));
+  }
 
-    let finalFile = file;
+  async function handleCropConfirm(area: Area, rotation: number) {
+    if (!cropSrc) return;
     setProcessing(true);
     try {
-      finalFile = await compressImage(file);
+      const file = await cropAndCompress(cropSrc, area, rotation);
       const dt = new DataTransfer();
-      dt.items.add(finalFile);
-      input.files = dt.files;
+      dt.items.add(file);
+      if (photoInputRef.current) photoInputRef.current.files = dt.files;
+
+      const url = URL.createObjectURL(file);
+      setObjectUrl(url);
+      setPreview(url);
+      setRemoved(false);
     } catch {
-      // Si no se puede comprimir, se envía el original; el servidor valida el tamaño.
+      setCropError("No se pudo procesar la foto. Prueba con otra.");
     } finally {
       setProcessing(false);
+      setCropSrc(null);
     }
-
-    const url = URL.createObjectURL(finalFile);
-    setObjectUrl(url);
-    setPreview(url);
-    setRemoved(false);
   }
 
   function handleRemove() {
     setObjectUrl(null);
     setPreview(null);
     setRemoved(initialUrl !== null);
-    if (inputRef.current) inputRef.current.value = "";
+    if (photoInputRef.current) photoInputRef.current.value = "";
   }
 
   return (
@@ -118,18 +156,20 @@ export function PiecePhotoField({ initialUrl = null, error }: Props) {
             <PieceIcon className="h-8 w-11 text-ink-soft/40" />
           )}
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col items-start gap-1.5">
           <label className="btn-ghost cursor-pointer text-xs">
-            {processing ? "Procesando..." : preview ? "Cambiar foto" : "Subir foto"}
+            Hacer foto
             <input
-              ref={inputRef}
-              name="photo"
               type="file"
               accept="image/*"
-              onChange={handleFileChange}
-              disabled={processing}
+              capture="environment"
+              onChange={handlePick}
               className="hidden"
             />
+          </label>
+          <label className="btn-ghost cursor-pointer text-xs">
+            Elegir de la galería
+            <input type="file" accept="image/*" onChange={handlePick} className="hidden" />
           </label>
           {preview && (
             <Button
@@ -144,8 +184,21 @@ export function PiecePhotoField({ initialUrl = null, error }: Props) {
           )}
         </div>
       </div>
+      {/* Foto ya recortada y comprimida: es la única que se envía. */}
+      <input ref={photoInputRef} type="file" name="photo" className="hidden" tabIndex={-1} />
       {removed && <input type="hidden" name="remove_photo" value="1" />}
-      {error && <span className="text-xs text-red-status">{error}</span>}
+      {processing && <span className="text-xs text-steel">Procesando foto...</span>}
+      {(cropError ?? error) && (
+        <span className="text-xs text-red-status">{cropError ?? error}</span>
+      )}
+
+      {cropSrc && !processing && (
+        <PhotoCropper
+          imageSrc={cropSrc}
+          onCancel={() => setCropSrc(null)}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }

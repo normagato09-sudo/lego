@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { DeletePieceButton } from "../_components/DeletePieceButton";
 import { QuantityStepper } from "../_components/QuantityStepper";
+import { pieceTitle } from "@/lib/piece-display";
 
 export default async function PieceDetailPage({
   params,
@@ -40,7 +41,7 @@ export default async function PieceDetailPage({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={piece.image_url}
-              alt={piece.name}
+              alt={pieceTitle(piece)}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -49,7 +50,7 @@ export default async function PieceDetailPage({
         </div>
         <div className="flex-1">
           <span className="font-mono text-xs text-steel">{piece.lego_id}</span>
-          <h1 className="text-xl font-semibold text-ink">{piece.name}</h1>
+          <h1 className="text-xl font-semibold text-ink">{pieceTitle(piece)}</h1>
           {piece.description && <p className="mt-1 text-sm text-steel">{piece.description}</p>}
           <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-steel">Color</dt>
@@ -74,7 +75,7 @@ export default async function PieceDetailPage({
       </Card>
       <div className="mt-6 flex gap-2">
         <Button href={`/piezas/${piece.id}/editar`}>Editar</Button>
-        <DeletePieceButton id={piece.id} name={piece.name} redirectOnError={`/piezas/${piece.id}`} />
+        <DeletePieceButton id={piece.id} name={pieceTitle(piece)} redirectOnError={`/piezas/${piece.id}`} />
       </div>
     </div>
   );

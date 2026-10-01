@@ -1,4 +1,5 @@
 import type { PieceWithDetails, Set, Project } from "@/lib/types";
+import { pieceTitle } from "@/lib/piece-display";
 
 /**
  * Capa de búsqueda. Preparación de arquitectura: estas funciones no están
@@ -104,7 +105,7 @@ export function searchAll(
   const pieceResults: SearchResult[] = searchPieces(pieces, query).map((piece) => ({
     kind: "piece",
     id: piece.id,
-    title: piece.name,
+    title: pieceTitle(piece),
     subtitle: piece.lego_id,
     href: `/piezas/${piece.id}`,
   }));

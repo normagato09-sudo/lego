@@ -44,3 +44,12 @@ de Storage `piece-images` (lectura pública, máx. 4 MB, solo imágenes) donde
 se guardan las fotos de las piezas. La subida y el borrado se hacen desde el
 servidor con la clave service_role. Aplícala igual que las anteriores, antes
 de desplegar el código que la usa.
+
+## Cuarta migración (nombre opcional y pieza+color única)
+
+`migrations/20261002090000_pieces_name_optional_unique_nulls.sql` hace
+opcional `pieces.name` (el formulario ya no lo pide) y cambia la
+restricción única `(lego_id, color_id, location_id)` a `nulls not distinct`,
+para que no se pueda repetir la misma pieza en el mismo color sin ubicación.
+Antes de ejecutarla, lanza la consulta de duplicados que hay en la cabecera
+del archivo: si devuelve filas, hay que resolverlas primero.

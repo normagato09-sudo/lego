@@ -14,7 +14,7 @@ export type Piece = {
   id: string;
   lego_id: string;
   element_id: string | null;
-  name: string;
+  name: string | null;
   description: string | null;
   color_id: string;
   quantity: number;

@@ -4,6 +4,7 @@ import { ColorSwatch } from "@/components/ColorSwatch";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { PieceIcon } from "@/components/PieceIcon";
+import { pieceTitle } from "@/lib/piece-display";
 import { DeletePieceButton } from "./DeletePieceButton";
 
 export function PieceCard({ piece }: { piece: PieceWithDetails }) {
@@ -18,7 +19,7 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={piece.image_url}
-            alt={piece.name}
+            alt={pieceTitle(piece)}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -37,7 +38,7 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
       </div>
 
       <Link href={`/piezas/${piece.id}`} className="mt-1 text-sm font-medium leading-snug hover:underline">
-        {piece.name}
+        {pieceTitle(piece)}
       </Link>
 
       <div className="mt-2 flex items-center gap-1.5 text-xs text-steel">
@@ -55,7 +56,7 @@ export function PieceCard({ piece }: { piece: PieceWithDetails }) {
         <Button href={`/piezas/${piece.id}/editar`} variant="ghost" size="sm">
           Editar
         </Button>
-        <DeletePieceButton id={piece.id} name={piece.name} compact redirectOnError="/piezas" />
+        <DeletePieceButton id={piece.id} name={pieceTitle(piece)} compact redirectOnError="/piezas" />
       </div>
     </Card>
   );

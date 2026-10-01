@@ -7,21 +7,38 @@ import { MAX_PHOTO_BYTES, removePieceImage, uploadPieceImage } from "@/lib/piece
 import { friendlyDbError } from "./db-errors";
 
 export type PieceFieldErrors = Partial<
-  Record<"lego_id" | "name" | "color_id" | "quantity" | "photo", string>
+  Record<"lego_id" | "color_id" | "quantity" | "photo", string>
 >;
 
 export type PieceFormState = {
   error?: string;
   fieldErrors?: PieceFieldErrors;
+  /** Si ya existe la misma pieza en ese color: id de esa pieza, para enlazarla. */
+  existingPieceId?: string;
 };
+
+const DUPLICATE_MESSAGE = "Ya tienes esta pieza en este color. Edita su cantidad.";
+
+/**
+ * Busca la pieza que ya ocupa esa combinación lego_id + color + ubicación
+ * (la que hace saltar la restricción única). Devuelve null si no la encuentra.
+ */
+async function findExistingPieceId(
+  supabase: ReturnType<typeof createAdminClient>,
+  legoId: string,
+  colorId: string,
+  locationId: string | null,
+): Promise<string | null> {
+  let query = supabase.from("pieces").select("id").eq("lego_id", legoId).eq("color_id", colorId);
+  query = locationId ? query.eq("location_id", locationId) : query.is("location_id", null);
+  const { data } = await query.limit(1).maybeSingle();
+  return data?.id ?? null;
+}
 
 type ParsedPiece = {
   legoId: string;
   elementId: string | null;
-  name: string;
-  description: string | null;
   colorId: string;
-  locationId: string | null;
   quantity: number;
   photo: File | null;
   removePhoto: boolean;
@@ -31,10 +48,7 @@ type ParsedPiece = {
 function parsePieceForm(formData: FormData): ParsedPiece {
   const legoId = String(formData.get("lego_id") ?? "").trim();
   const elementId = String(formData.get("element_id") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
   const colorId = String(formData.get("color_id") ?? "").trim();
-  const locationIdRaw = String(formData.get("location_id") ?? "").trim();
   const quantityRaw = String(formData.get("quantity") ?? "").trim();
   const quantity = Number(quantityRaw);
   const photoRaw = formData.get("photo");
@@ -42,7 +56,6 @@ function parsePieceForm(formData: FormData): ParsedPiece {
 
   const fieldErrors: PieceFieldErrors = {};
   if (!legoId) fieldErrors.lego_id = "El ID de diseño es obligatorio.";
-  if (!name) fieldErrors.name = "El nombre es obligatorio.";
   if (!colorId) fieldErrors.color_id = "Elige un color.";
   if (quantityRaw === "" || !Number.isInteger(quantity) || quantity < 0) {
     fieldErrors.quantity = "La cantidad debe ser un número entero igual o mayor que 0.";
@@ -56,10 +69,7 @@ function parsePieceForm(formData: FormData): ParsedPiece {
   return {
     legoId,
     elementId: elementId === "" ? null : elementId,
-    name,
-    description: description === "" ? null : description,
     colorId,
-    locationId: locationIdRaw === "" ? null : locationIdRaw,
     quantity,
     photo,
     removePhoto: formData.get("remove_photo") === "1",
@@ -87,15 +97,13 @@ export async function createPiece(
     }
   }
 
+  // Nombre, descripción y ubicación ya no se piden en el formulario: quedan a null.
   const { data, error } = await supabase
     .from("pieces")
     .insert({
       lego_id: parsed.legoId,
       element_id: parsed.elementId,
-      name: parsed.name,
-      description: parsed.description,
       color_id: parsed.colorId,
-      location_id: parsed.locationId,
       quantity: parsed.quantity,
       image_url: imageUrl,
     })
@@ -104,6 +112,10 @@ export async function createPiece(
 
   if (error) {
     await removePieceImage(supabase, imageUrl);
+    if (error.code === "23505") {
+      const existingPieceId = await findExistingPieceId(supabase, parsed.legoId, parsed.colorId, null);
+      return { error: DUPLICATE_MESSAGE, existingPieceId: existingPieceId ?? undefined };
+    }
     return { error: friendlyDbError(error) };
   }
 
@@ -125,7 +137,7 @@ export async function updatePiece(
 
   const { data: current, error: currentError } = await supabase
     .from("pieces")
-    .select("image_url")
+    .select("image_url, location_id")
     .eq("id", id)
     .maybeSingle();
   if (currentError) {
@@ -145,15 +157,13 @@ export async function updatePiece(
     newImageUrl = null;
   }
 
+  // Nombre, descripción y ubicación no se envían: se conservan los que ya tenga.
   const { error } = await supabase
     .from("pieces")
     .update({
       lego_id: parsed.legoId,
       element_id: parsed.elementId,
-      name: parsed.name,
-      description: parsed.description,
       color_id: parsed.colorId,
-      location_id: parsed.locationId,
       quantity: parsed.quantity,
       ...(newImageUrl !== undefined && { image_url: newImageUrl }),
     })
@@ -161,6 +171,15 @@ export async function updatePiece(
 
   if (error) {
     if (newImageUrl) await removePieceImage(supabase, newImageUrl);
+    if (error.code === "23505") {
+      const existingPieceId = await findExistingPieceId(
+        supabase,
+        parsed.legoId,
+        parsed.colorId,
+        current?.location_id ?? null,
+      );
+      return { error: DUPLICATE_MESSAGE, existingPieceId: existingPieceId ?? undefined };
+    }
     return { error: friendlyDbError(error) };
   }
 

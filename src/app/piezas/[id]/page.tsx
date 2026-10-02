@@ -1,82 +1,17 @@
 export const dynamic = 'force-dynamic';
 
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getPieceById } from "@/lib/pieces";
-import { ColorSwatch } from "@/components/ColorSwatch";
-import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
-import { ErrorBanner } from "@/components/ErrorBanner";
-import { DeletePieceButton } from "../_components/DeletePieceButton";
-import { QuantityStepper } from "../_components/QuantityStepper";
-import { pieceTitle } from "@/lib/piece-display";
+import { designHref } from "@/lib/piece-display";
 
+/** El detalle vive en la página del diseño; esta ruta se mantiene para enlaces antiguos. */
 export default async function PieceDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ deleteError?: string }>;
 }) {
   const { id } = await params;
-  const { deleteError } = await searchParams;
   const piece = await getPieceById(id);
   if (!piece) notFound();
-  return (
-    <div className="mx-auto max-w-2xl px-5 py-8">
-      <Link href="/piezas" className="text-sm text-steel hover:text-ink">
-        ← Volver a piezas
-      </Link>
-      {deleteError && (
-        <div className="mt-4">
-          <ErrorBanner message={deleteError} />
-        </div>
-      )}
-      <Card padding="lg" className="mt-4 flex flex-col gap-5 sm:flex-row">
-        <div
-          className="flex h-32 w-32 shrink-0 items-center justify-center self-center overflow-hidden rounded-md sm:self-start"
-          style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
-        >
-          {piece.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={piece.image_url}
-              alt={pieceTitle(piece)}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <ColorSwatch color={piece.color} size={56} shape="square" />
-          )}
-        </div>
-        <div className="flex-1">
-          <span className="font-mono text-xs text-steel">{piece.lego_id}</span>
-          <h1 className="text-xl font-semibold text-ink">{pieceTitle(piece)}</h1>
-          {piece.description && <p className="mt-1 text-sm text-steel">{piece.description}</p>}
-          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-steel">Color</dt>
-            <dd className="flex items-center gap-1.5 text-ink">
-              <ColorSwatch color={piece.color} size={12} />
-              {piece.color.name}
-            </dd>
-            {piece.element_id && (
-              <>
-                <dt className="text-steel">ID de pieza</dt>
-                <dd className="font-mono text-ink">{piece.element_id}</dd>
-              </>
-            )}
-            <dt className="text-steel">Ubicación</dt>
-            <dd className="text-ink">{piece.locationLabel ?? "Sin ubicación"}</dd>
-          </dl>
-        </div>
-      </Card>
-      <Card padding="md" className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Cantidad disponible</h2>
-        <QuantityStepper id={piece.id} quantity={piece.quantity} />
-      </Card>
-      <div className="mt-6 flex gap-2">
-        <Button href={`/piezas/${piece.id}/editar`}>Editar</Button>
-        <DeletePieceButton id={piece.id} name={pieceTitle(piece)} redirectOnError={`/piezas/${piece.id}`} />
-      </div>
-    </div>
-  );
+  redirect(designHref(piece.lego_id));
 }

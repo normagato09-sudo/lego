@@ -25,7 +25,7 @@ export default async function PiezasPage({
         <div>
           <h1 className="text-xl font-semibold text-ink">Piezas</h1>
           <p className="text-sm text-steel">
-            {pieces.length} {pieces.length === 1 ? "pieza" : "piezas"} en tu inventario
+            {stats.totalUniquePieces} {stats.totalUniquePieces === 1 ? "diseño" : "diseños"} en tu inventario
           </p>
         </div>
         <Button href="/piezas/nueva" variant="primary">

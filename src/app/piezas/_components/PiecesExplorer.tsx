@@ -2,18 +2,19 @@
 
 import { useMemo, useState } from "react";
 import type { PieceWithDetails } from "@/lib/types";
-import { searchPieces } from "@/lib/search";
+import { groupPiecesByDesign } from "@/lib/piece-groups";
+import { searchPieceGroups } from "@/lib/search";
 import { Button } from "@/components/Button";
-import { PieceCard } from "./PieceCard";
+import { DesignCard } from "./DesignCard";
 
 type Props = {
   pieces: PieceWithDetails[];
 };
 
 /**
- * Listado de piezas con búsqueda integrada.
+ * Listado de piezas agrupadas por ID de diseño, con búsqueda integrada.
  * Las piezas ya llegan cargadas desde el servidor (una sola consulta en
- * PiezasPage); aquí solo se filtran en el cliente con `searchPieces`
+ * PiezasPage); aquí se agrupan y se filtran en el cliente con `searchPieceGroups`
  * (src/lib/search.ts), sin volver a consultar Supabase ni reimplementar
  * el filtrado.
  */
@@ -21,7 +22,8 @@ export function PiecesExplorer({ pieces }: Props) {
   const [query, setQuery] = useState("");
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
-  const filtered = useMemo(() => searchPieces(pieces, query), [pieces, query]);
+  const groups = useMemo(() => groupPiecesByDesign(pieces), [pieces]);
+  const filtered = useMemo(() => searchPieceGroups(groups, query), [groups, query]);
 
   return (
     <div>
@@ -34,7 +36,7 @@ export function PiecesExplorer({ pieces }: Props) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por nombre, ID, color o ubicación…"
+          placeholder="Buscar por ID de diseño, ID de pieza, color o ubicación…"
           className="input"
         />
       </div>
@@ -56,8 +58,8 @@ export function PiecesExplorer({ pieces }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((piece) => (
-            <PieceCard key={piece.id} piece={piece} />
+          {filtered.map((group) => (
+            <DesignCard key={group.legoId} group={group} />
           ))}
         </div>
       )}

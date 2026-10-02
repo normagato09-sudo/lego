@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { Color, Location, PieceWithDetails } from "@/lib/types";
+import type { Color, Location, Piece, PieceWithDetails } from "@/lib/types";
 
 export async function getColors(): Promise<Color[]> {
   const supabase = createAdminClient();
@@ -41,6 +41,18 @@ export function locationLabel(
   return parent ? `${parent.name} › ${location.name}` : location.name;
 }
 
+function withDetails(
+  piece: Piece,
+  colorsById: Map<string, Color>,
+  locations: Location[],
+): PieceWithDetails {
+  return {
+    ...piece,
+    color: colorsById.get(piece.color_id) ?? { id: piece.color_id, name: "Desconocido", hex_code: null },
+    locationLabel: locationLabel(piece.location_id, locations),
+  };
+}
+
 export async function getPieces(): Promise<PieceWithDetails[]> {
   const supabase = createAdminClient();
   const [{ data: pieces, error }, colors, locations] = await Promise.all([
@@ -54,11 +66,26 @@ export async function getPieces(): Promise<PieceWithDetails[]> {
   }
 
   const colorsById = new Map(colors.map((c) => [c.id, c]));
-  return (pieces ?? []).map((piece) => ({
-    ...piece,
-    color: colorsById.get(piece.color_id) ?? { id: piece.color_id, name: "Desconocido", hex_code: null },
-    locationLabel: locationLabel(piece.location_id, locations),
-  }));
+  return (pieces ?? []).map((piece) => withDetails(piece, colorsById, locations));
+}
+
+/** Todas las variantes (colores) de un ID de diseño, ordenadas por nombre de color. */
+export async function getPiecesByLegoId(legoId: string): Promise<PieceWithDetails[]> {
+  const supabase = createAdminClient();
+  const [{ data: pieces, error }, colors, locations] = await Promise.all([
+    supabase.from("pieces").select("*").eq("lego_id", legoId),
+    getColors(),
+    getLocations(),
+  ]);
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las piezas: ${error.message}`);
+  }
+
+  const colorsById = new Map(colors.map((c) => [c.id, c]));
+  return (pieces ?? [])
+    .map((piece) => withDetails(piece, colorsById, locations))
+    .sort((a, b) => a.color.name.localeCompare(b.color.name, "es"));
 }
 
 export async function getPieceById(id: string): Promise<PieceWithDetails | null> {
@@ -75,9 +102,5 @@ export async function getPieceById(id: string): Promise<PieceWithDetails | null>
   if (!piece) return null;
 
   const colorsById = new Map(colors.map((c) => [c.id, c]));
-  return {
-    ...piece,
-    color: colorsById.get(piece.color_id) ?? { id: piece.color_id, name: "Desconocido", hex_code: null },
-    locationLabel: locationLabel(piece.location_id, locations),
-  };
+  return withDetails(piece, colorsById, locations);
 }

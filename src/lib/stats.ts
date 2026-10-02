@@ -36,7 +36,8 @@ export function calculateInventoryStats(
   projectPieces: ProjectPiece[] = [],
 ): InventoryStats {
   const totalPieces = pieces.reduce((sum, piece) => sum + piece.quantity, 0);
-  const totalUniquePieces = pieces.length;
+  // Diseños distintos (lego_id), no filas: cada color es una variante del mismo diseño.
+  const totalUniquePieces = new Set(pieces.map((piece) => piece.lego_id)).size;
   const piecesAvailable = pieces.reduce(
     (sum, piece) => sum + Math.max(0, piece.quantity),
     0,

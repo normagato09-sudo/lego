@@ -1,5 +1,6 @@
 import type { PieceWithDetails, Set, Project } from "@/lib/types";
-import { pieceTitle } from "@/lib/piece-display";
+import type { PieceGroup } from "@/lib/piece-groups";
+import { designHref, pieceTitle } from "@/lib/piece-display";
 
 /**
  * Capa de búsqueda. Preparación de arquitectura: estas funciones no están
@@ -29,7 +30,8 @@ function normalize(value: string): string {
 }
 
 /**
- * Búsqueda de piezas por nombre, referencia (lego_id), color o ubicación.
+ * Búsqueda de piezas por nombre, referencia (lego_id), ID de pieza
+ * (element_id), color o ubicación.
  * Ya funciona sobre datos reales de Supabase (PieceWithDetails), porque
  * es la única entidad que existe hoy en la app.
  *
@@ -44,6 +46,7 @@ export function searchPieces(pieces: PieceWithDetails[], query: string): PieceWi
     const haystack = [
       piece.name,
       piece.lego_id,
+      piece.element_id,
       piece.color?.name,
       piece.locationLabel,
     ]
@@ -52,6 +55,12 @@ export function searchPieces(pieces: PieceWithDetails[], query: string): PieceWi
 
     return haystack.some((value) => value.includes(q));
   });
+}
+
+/** Un diseño coincide si alguna de sus variantes coincide. */
+export function searchPieceGroups(groups: PieceGroup[], query: string): PieceGroup[] {
+  if (!query.trim()) return groups;
+  return groups.filter((group) => searchPieces(group.variants, query).length > 0);
 }
 
 /**
@@ -107,7 +116,7 @@ export function searchAll(
     id: piece.id,
     title: pieceTitle(piece),
     subtitle: piece.lego_id,
-    href: `/piezas/${piece.id}`,
+    href: designHref(piece.lego_id),
   }));
 
   const setResults: SearchResult[] = searchSets(sets, query).map((set) => ({

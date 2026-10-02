@@ -5,11 +5,14 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import type { Color, Piece } from "@/lib/types";
 import type { PieceFormState } from "../actions";
+import { designHref } from "@/lib/piece-display";
 import { Button } from "@/components/Button";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { PiecePhotoField } from "./PiecePhotoField";
 
-type DefaultValues = Pick<Piece, "lego_id" | "element_id" | "color_id" | "quantity" | "image_url">;
+type DefaultValues = Partial<
+  Pick<Piece, "lego_id" | "element_id" | "color_id" | "quantity" | "image_url">
+>;
 
 type Props = {
   action: (prevState: PieceFormState, formData: FormData) => Promise<PieceFormState>;
@@ -52,8 +55,8 @@ export function PieceForm({ action, colors, defaultValues, submitLabel }: Props)
     <form action={formAction} className="flex flex-col gap-5">
       {state.error && (
         <ErrorBanner message={state.error}>
-          {state.existingPieceId && (
-            <Link href={`/piezas/${state.existingPieceId}`} className="font-medium underline">
+          {state.existingLegoId && (
+            <Link href={designHref(state.existingLegoId)} className="font-medium underline">
               Ir a la pieza existente
             </Link>
           )}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAX_PHOTO_BYTES, removePieceImage, uploadPieceImage } from "@/lib/piece-images";
+import { designHref } from "@/lib/piece-display";
 import { friendlyDbError } from "./db-errors";
 
 export type PieceFieldErrors = Partial<
@@ -13,8 +14,8 @@ export type PieceFieldErrors = Partial<
 export type PieceFormState = {
   error?: string;
   fieldErrors?: PieceFieldErrors;
-  /** Si ya existe la misma pieza en ese color: id de esa pieza, para enlazarla. */
-  existingPieceId?: string;
+  /** Si ya existe la misma pieza en ese color: su ID de diseño, para enlazar su página. */
+  existingLegoId?: string;
 };
 
 const DUPLICATE_MESSAGE = "Ya tienes esta pieza en este color. Edita su cantidad.";
@@ -98,29 +99,25 @@ export async function createPiece(
   }
 
   // Nombre, descripción y ubicación ya no se piden en el formulario: quedan a null.
-  const { data, error } = await supabase
-    .from("pieces")
-    .insert({
-      lego_id: parsed.legoId,
-      element_id: parsed.elementId,
-      color_id: parsed.colorId,
-      quantity: parsed.quantity,
-      image_url: imageUrl,
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.from("pieces").insert({
+    lego_id: parsed.legoId,
+    element_id: parsed.elementId,
+    color_id: parsed.colorId,
+    quantity: parsed.quantity,
+    image_url: imageUrl,
+  });
 
   if (error) {
     await removePieceImage(supabase, imageUrl);
     if (error.code === "23505") {
       const existingPieceId = await findExistingPieceId(supabase, parsed.legoId, parsed.colorId, null);
-      return { error: DUPLICATE_MESSAGE, existingPieceId: existingPieceId ?? undefined };
+      return { error: DUPLICATE_MESSAGE, existingLegoId: existingPieceId ? parsed.legoId : undefined };
     }
     return { error: friendlyDbError(error) };
   }
 
-  revalidatePath("/piezas");
-  redirect(`/piezas/${data.id}`);
+  revalidatePath("/piezas", "layout");
+  redirect(designHref(parsed.legoId));
 }
 
 export async function updatePiece(
@@ -178,7 +175,7 @@ export async function updatePiece(
         parsed.colorId,
         current?.location_id ?? null,
       );
-      return { error: DUPLICATE_MESSAGE, existingPieceId: existingPieceId ?? undefined };
+      return { error: DUPLICATE_MESSAGE, existingLegoId: existingPieceId ? parsed.legoId : undefined };
     }
     return { error: friendlyDbError(error) };
   }
@@ -187,18 +184,15 @@ export async function updatePiece(
     await removePieceImage(supabase, oldImageUrl);
   }
 
-  revalidatePath("/piezas");
-  revalidatePath(`/piezas/${id}`);
-  redirect(`/piezas/${id}`);
+  revalidatePath("/piezas", "layout");
+  redirect(designHref(parsed.legoId));
 }
 
 export async function deletePiece(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  // Dónde quedarse si el borrado falla: el detalle si se borra desde ahí,
-  // o el listado si se borra desde una PieceCard. Sin esto, el usuario
-  // borrando desde /piezas acababa en /piezas/[id] sin explicación.
+  // Dónde quedarse si el borrado falla (la página del diseño desde la que se borra).
   const redirectOnError = String(formData.get("redirect_on_error") ?? "/piezas");
 
   const supabase = createAdminClient();
@@ -206,7 +200,7 @@ export async function deletePiece(formData: FormData): Promise<void> {
     .from("pieces")
     .delete()
     .eq("id", id)
-    .select("image_url")
+    .select("image_url, lego_id")
     .maybeSingle();
 
   if (error) {
@@ -216,7 +210,16 @@ export async function deletePiece(formData: FormData): Promise<void> {
 
   await removePieceImage(supabase, deleted?.image_url ?? null);
 
-  revalidatePath("/piezas");
+  revalidatePath("/piezas", "layout");
+
+  // Si quedan más colores de ese diseño se vuelve a su página; si era el último, al listado.
+  if (deleted) {
+    const { count } = await supabase
+      .from("pieces")
+      .select("id", { count: "exact", head: true })
+      .eq("lego_id", deleted.lego_id);
+    if (count) redirect(designHref(deleted.lego_id));
+  }
   redirect("/piezas");
 }
 
@@ -241,7 +244,6 @@ export async function updateQuantity(
     return { error: friendlyDbError(error) };
   }
 
-  revalidatePath("/piezas");
-  revalidatePath(`/piezas/${id}`);
+  revalidatePath("/piezas", "layout");
   return {};
 }

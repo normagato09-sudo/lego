@@ -53,3 +53,19 @@ restricción única `(lego_id, color_id, location_id)` a `nulls not distinct`,
 para que no se pueda repetir la misma pieza en el mismo color sin ubicación.
 Antes de ejecutarla, lanza la consulta de duplicados que hay en la cabecera
 del archivo: si devuelve filas, hay que resolverlas primero.
+
+## Quinta migración (catálogo de Rebrickable)
+
+`migrations/20261003090000_rebrickable_catalog.sql` crea las tablas de
+catálogo (`catalog_colors`, `catalog_part_categories`, `catalog_parts`,
+`catalog_elements`, `catalog_part_colors`), separadas del inventario, y la
+función `search_catalog_parts` para las sugerencias al añadir una pieza.
+
+Después de aplicarla, rellena el catálogo desde tu ordenador:
+
+1. Pon `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en `.env.local`.
+2. Ejecuta `npm run catalog:import` (Node 20.9 o superior; tarda unos minutos).
+3. Comprueba los recuentos con la consulta de la cabecera de la migración.
+
+Para actualizar el catálogo más adelante, basta con repetir el paso 2: solo
+añade o actualiza filas. Datos: [Rebrickable](https://rebrickable.com/downloads/).

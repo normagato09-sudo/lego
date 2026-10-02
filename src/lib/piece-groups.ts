@@ -1,8 +1,12 @@
 import type { Color, PieceWithDetails } from "@/lib/types";
+import { designKey } from "@/lib/piece-display";
 
-/** Todas las variantes (colores) de un mismo ID de diseño. */
+/** Todas las variantes (colores) de un mismo diseño (ver designKey). */
 export type PieceGroup = {
-  legoId: string;
+  /** Clave del diseño: part_num de Rebrickable o, si no está en el catálogo, el ID escrito. */
+  key: string;
+  /** IDs de diseño de LEGO escritos en sus piezas, p. ej. ["3023", "28653"]. */
+  legoIds: string[];
   variants: PieceWithDetails[];
   totalQuantity: number;
   colors: Color[];
@@ -12,20 +16,22 @@ export type PieceGroup = {
   cover: PieceWithDetails;
 };
 
-/** Agrupa por lego_id respetando el orden de llegada; dentro, variantes por nombre de color. */
+/** Agrupa por diseño respetando el orden de llegada; dentro, variantes por nombre de color. */
 export function groupPiecesByDesign(pieces: PieceWithDetails[]): PieceGroup[] {
-  const byLegoId = new Map<string, PieceWithDetails[]>();
+  const byKey = new Map<string, PieceWithDetails[]>();
   for (const piece of pieces) {
-    const list = byLegoId.get(piece.lego_id);
+    const key = designKey(piece);
+    const list = byKey.get(key);
     if (list) list.push(piece);
-    else byLegoId.set(piece.lego_id, [piece]);
+    else byKey.set(key, [piece]);
   }
 
-  return [...byLegoId].map(([legoId, list]) => {
+  return [...byKey].map(([key, list]) => {
     const variants = [...list].sort((a, b) => a.color.name.localeCompare(b.color.name, "es"));
     const colors = [...new Map(variants.map((v) => [v.color.id, v.color])).values()];
     return {
-      legoId,
+      key,
+      legoIds: legoIdsOf(variants),
       variants,
       totalQuantity: variants.reduce((sum, v) => sum + v.quantity, 0),
       colors,
@@ -36,4 +42,11 @@ export function groupPiecesByDesign(pieces: PieceWithDetails[]): PieceGroup[] {
         variants[0],
     };
   });
+}
+
+/** IDs de diseño escritos, sin repetir; primero el que coincide con la clave del diseño. */
+export function legoIdsOf(pieces: PieceWithDetails[]): string[] {
+  const ids = [...new Set(pieces.map((p) => p.lego_id))];
+  const key = pieces[0] ? designKey(pieces[0]) : "";
+  return ids.sort((a, b) => Number(b === key) - Number(a === key) || a.localeCompare(b));
 }

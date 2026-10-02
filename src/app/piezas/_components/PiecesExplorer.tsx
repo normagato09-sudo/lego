@@ -59,7 +59,7 @@ export function PiecesExplorer({ pieces }: Props) {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((group) => (
-            <DesignCard key={group.legoId} group={group} />
+            <DesignCard key={group.key} group={group} />
           ))}
         </div>
       )}

@@ -1,6 +1,6 @@
 import type { PieceWithDetails, Set, Project } from "@/lib/types";
 import type { PieceGroup } from "@/lib/piece-groups";
-import { designHref, pieceTitle } from "@/lib/piece-display";
+import { designHref, designKey, pieceTitle } from "@/lib/piece-display";
 
 /**
  * Capa de búsqueda. Preparación de arquitectura: estas funciones no están
@@ -47,6 +47,7 @@ export function searchPieces(pieces: PieceWithDetails[], query: string): PieceWi
       piece.name,
       piece.catalogName,
       piece.lego_id,
+      piece.part_num,
       piece.element_id,
       piece.color?.name,
       piece.locationLabel,
@@ -117,7 +118,7 @@ export function searchAll(
     id: piece.id,
     title: pieceTitle(piece),
     subtitle: piece.lego_id,
-    href: designHref(piece.lego_id),
+    href: designHref(designKey(piece)),
   }));
 
   const setResults: SearchResult[] = searchSets(sets, query).map((set) => ({

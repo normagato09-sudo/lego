@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { findSamePiece, partNumsForDesignId, resolvePartNum, type SamePiece } from "@/lib/catalog";
 import type { Color } from "@/lib/types";
 
 /** Pieza del catálogo de Rebrickable, con su foto representativa. */
@@ -20,6 +21,8 @@ export type PartColor = {
 export type CatalogPartInfo = {
   part: CatalogPart | null;
   colors: PartColor[];
+  /** Nº de piezas con ese design_id cuando es ambiguo (más de una); 0 si no. */
+  ambiguousCount: number;
 };
 
 type PartColorRow = {
@@ -29,42 +32,36 @@ type PartColorRow = {
 };
 
 /**
- * La pieza `legoId` del catálogo y los colores en los que existe. Se busca
- * primero como part_num de Rebrickable y, si no está, como ID de diseño de
- * LEGO (que a veces es distinto). Si no está en el catálogo: part null y sin colores.
+ * La pieza del catálogo que corresponde a lo escrito (regla de resolvePartNum)
+ * y los colores en los que existe. Si no está o es ambigua: part null.
  */
-export async function getCatalogPart(legoId: string): Promise<CatalogPartInfo> {
+export async function getCatalogPart(
+  legoId: string,
+  elementId?: string | null,
+  chosenPartNum?: string | null,
+): Promise<CatalogPartInfo> {
   const id = legoId.trim();
-  if (!id) return { part: null, colors: [] };
+  if (!id && !chosenPartNum) return { part: null, colors: [], ambiguousCount: 0 };
+
+  const partNum = await resolvePartNum(id, elementId, chosenPartNum);
+  if (!partNum) {
+    const candidates = id ? await partNumsForDesignId(id) : [];
+    return {
+      part: null,
+      colors: [],
+      ambiguousCount: candidates.length > 1 ? candidates.length : 0,
+    };
+  }
 
   const supabase = createAdminClient();
-
-  const fetchPart = async (partNum: string) => {
-    const { data, error } = await supabase
-      .from("catalog_parts")
-      .select("part_num, name, img_url")
-      .eq("part_num", partNum)
-      .maybeSingle();
-    if (error) throw new Error(`No se pudo cargar la pieza del catálogo: ${error.message}`);
-    return data as CatalogPart | null;
-  };
-
-  let part = await fetchPart(id);
-  if (!part) {
-    const { data } = await supabase
-      .from("catalog_elements")
-      .select("part_num")
-      .eq("design_id", id)
-      .limit(1)
-      .maybeSingle();
-    if (data?.part_num) part = await fetchPart(data.part_num);
-  }
-  if (!part) return { part: null, colors: [] };
-
-  const { data, error } = await supabase
-    .from("catalog_part_colors")
-    .select("img_url, element_id, color:catalog_colors(id, name, rgb, is_trans)")
-    .eq("part_num", part.part_num);
+  const [{ data: part, error: partError }, { data, error }] = await Promise.all([
+    supabase.from("catalog_parts").select("part_num, name, img_url").eq("part_num", partNum).single(),
+    supabase
+      .from("catalog_part_colors")
+      .select("img_url, element_id, color:catalog_colors(id, name, rgb, is_trans)")
+      .eq("part_num", partNum),
+  ]);
+  if (partError) throw new Error(`No se pudo cargar la pieza del catálogo: ${partError.message}`);
   if (error) throw new Error(`No se pudieron cargar los colores de la pieza: ${error.message}`);
 
   const colors = ((data ?? []) as unknown as PartColorRow[])
@@ -86,39 +83,52 @@ export async function getCatalogPart(legoId: string): Promise<CatalogPartInfo> {
         a.color.name.localeCompare(b.color.name, "es"),
     );
 
-  return { part, colors };
+  return { part: part as CatalogPart, colors, ambiguousCount: 0 };
 }
 
 /** Sugerencias del catálogo mientras se escribe el ID de diseño. */
-export async function searchParts(q: string): Promise<CatalogPart[]> {
+export async function searchParts(q: string, maxResults = 8): Promise<CatalogPart[]> {
   const term = q.trim();
   if (term.length < 2) return [];
   const { data, error } = await createAdminClient().rpc("search_catalog_parts", {
     q: term,
-    max_results: 8,
+    max_results: maxResults,
   });
   if (error) throw new Error(`No se pudo buscar en el catálogo: ${error.message}`);
   return (data ?? []) as CatalogPart[];
 }
 
-export type ExistingPiece = { id: string; quantity: number };
+/** Element ID de LEGO (el de Pick a Brick): pieza, color e ID de diseño. */
+export type ElementInfo = {
+  element_id: string;
+  part_num: string;
+  design_id: string | null;
+  color_id: number;
+};
+
+export async function lookupElement(elementId: string): Promise<ElementInfo | null> {
+  const id = elementId.trim();
+  if (!/^\d{4,}$/.test(id)) return null;
+  const { data, error } = await createAdminClient()
+    .from("catalog_elements")
+    .select("element_id, part_num, design_id, color_id")
+    .eq("element_id", id)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo buscar el ID de elemento: ${error.message}`);
+  return data as ElementInfo | null;
+}
+
+export type ExistingPiece = SamePiece;
 
 /**
- * Si ya tienes ese diseño en ese color (sin contar la pieza que se edita),
- * devuelve una de esas filas y la cantidad total; si no, null.
+ * Si ya tienes esa pieza en ese color (sin contar la que se edita). Compara por
+ * pieza del catálogo + color si se conoce; si no, por el ID escrito + color.
  */
-export async function findExistingPiece(
-  legoId: string,
-  colorId: number,
-  excludeId?: string,
-): Promise<ExistingPiece | null> {
-  let query = createAdminClient()
-    .from("pieces")
-    .select("id, quantity")
-    .eq("lego_id", legoId.trim())
-    .eq("color_id", colorId);
-  if (excludeId) query = query.neq("id", excludeId);
-  const { data, error } = await query;
-  if (error || !data || data.length === 0) return null;
-  return { id: data[0].id, quantity: data.reduce((sum, p) => sum + p.quantity, 0) };
+export async function findExistingPiece(args: {
+  partNum: string | null;
+  legoId: string;
+  colorId: number;
+  excludeId?: string;
+}): Promise<ExistingPiece | null> {
+  return findSamePiece(args);
 }

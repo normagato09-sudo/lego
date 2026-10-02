@@ -26,6 +26,7 @@ export default async function EditPiecePage({
         colors={colors}
         defaultValues={{
           lego_id: piece.lego_id,
+          part_num: piece.part_num,
           element_id: piece.element_id,
           color_id: piece.color_id,
           quantity: piece.quantity,

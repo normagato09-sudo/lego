@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAX_PHOTO_BYTES, removePieceImage, uploadPieceImage } from "@/lib/piece-images";
 import { designHref } from "@/lib/piece-display";
+import { designFilter, findSamePiece, resolvePartNum } from "@/lib/catalog";
 import { friendlyDbError } from "./db-errors";
 
 export type PieceFieldErrors = Partial<
@@ -14,7 +15,7 @@ export type PieceFieldErrors = Partial<
 export type PieceFormState = {
   error?: string;
   fieldErrors?: PieceFieldErrors;
-  /** Si ya existe la misma pieza en ese color: su ID de diseño, para enlazar su página. */
+  /** Si ya existe la misma pieza en ese color: la clave de su diseño, para enlazar su página. */
   existingLegoId?: string;
 };
 
@@ -39,6 +40,8 @@ async function findExistingPieceId(
 type ParsedPiece = {
   legoId: string;
   elementId: string | null;
+  /** Pieza del catálogo elegida en el formulario (campo oculto). */
+  chosenPartNum: string | null;
   colorId: number;
   quantity: number;
   photo: File | null;
@@ -49,6 +52,7 @@ type ParsedPiece = {
 function parsePieceForm(formData: FormData): ParsedPiece {
   const legoId = String(formData.get("lego_id") ?? "").trim();
   const elementId = String(formData.get("element_id") ?? "").trim();
+  const chosenPartNum = String(formData.get("part_num") ?? "").trim();
   const colorRaw = String(formData.get("color_id") ?? "").trim();
   // Ids de Rebrickable: el 0 es Black, así que no vale comprobar con !colorId.
   const colorId = Number(colorRaw);
@@ -72,6 +76,7 @@ function parsePieceForm(formData: FormData): ParsedPiece {
   return {
     legoId,
     elementId: elementId === "" ? null : elementId,
+    chosenPartNum: chosenPartNum === "" ? null : chosenPartNum,
     colorId,
     quantity,
     photo,
@@ -91,6 +96,11 @@ export async function createPiece(
 
   const supabase = createAdminClient();
 
+  // lego_id se guarda tal cual; part_num es la pieza del catálogo que le corresponde.
+  const partNum = await resolvePartNum(parsed.legoId, parsed.elementId, parsed.chosenPartNum);
+  const same = await findSamePiece({ partNum, legoId: parsed.legoId, colorId: parsed.colorId });
+  if (same) return { error: DUPLICATE_MESSAGE, existingLegoId: same.designKey };
+
   let imageUrl: string | null = null;
   if (parsed.photo) {
     try {
@@ -103,6 +113,7 @@ export async function createPiece(
   // Nombre, descripción y ubicación ya no se piden en el formulario: quedan a null.
   const { error } = await supabase.from("pieces").insert({
     lego_id: parsed.legoId,
+    part_num: partNum,
     element_id: parsed.elementId,
     color_id: parsed.colorId,
     quantity: parsed.quantity,
@@ -113,13 +124,16 @@ export async function createPiece(
     await removePieceImage(supabase, imageUrl);
     if (error.code === "23505") {
       const existingPieceId = await findExistingPieceId(supabase, parsed.legoId, parsed.colorId, null);
-      return { error: DUPLICATE_MESSAGE, existingLegoId: existingPieceId ? parsed.legoId : undefined };
+      return {
+        error: DUPLICATE_MESSAGE,
+        existingLegoId: existingPieceId ? (partNum ?? parsed.legoId) : undefined,
+      };
     }
     return { error: friendlyDbError(error) };
   }
 
   revalidatePath("/piezas", "layout");
-  redirect(designHref(parsed.legoId));
+  redirect(designHref(partNum ?? parsed.legoId));
 }
 
 export async function updatePiece(
@@ -144,6 +158,15 @@ export async function updatePiece(
   }
   const oldImageUrl: string | null = current?.image_url ?? null;
 
+  const partNum = await resolvePartNum(parsed.legoId, parsed.elementId, parsed.chosenPartNum);
+  const same = await findSamePiece({
+    partNum,
+    legoId: parsed.legoId,
+    colorId: parsed.colorId,
+    excludeId: id,
+  });
+  if (same) return { error: DUPLICATE_MESSAGE, existingLegoId: same.designKey };
+
   // undefined = no tocar la foto actual.
   let newImageUrl: string | null | undefined;
   if (parsed.photo) {
@@ -161,6 +184,7 @@ export async function updatePiece(
     .from("pieces")
     .update({
       lego_id: parsed.legoId,
+      part_num: partNum,
       element_id: parsed.elementId,
       color_id: parsed.colorId,
       quantity: parsed.quantity,
@@ -177,7 +201,10 @@ export async function updatePiece(
         parsed.colorId,
         current?.location_id ?? null,
       );
-      return { error: DUPLICATE_MESSAGE, existingLegoId: existingPieceId ? parsed.legoId : undefined };
+      return {
+        error: DUPLICATE_MESSAGE,
+        existingLegoId: existingPieceId ? (partNum ?? parsed.legoId) : undefined,
+      };
     }
     return { error: friendlyDbError(error) };
   }
@@ -187,7 +214,7 @@ export async function updatePiece(
   }
 
   revalidatePath("/piezas", "layout");
-  redirect(designHref(parsed.legoId));
+  redirect(designHref(partNum ?? parsed.legoId));
 }
 
 export async function deletePiece(formData: FormData): Promise<void> {
@@ -202,7 +229,7 @@ export async function deletePiece(formData: FormData): Promise<void> {
     .from("pieces")
     .delete()
     .eq("id", id)
-    .select("image_url, lego_id")
+    .select("image_url, lego_id, part_num")
     .maybeSingle();
 
   if (error) {
@@ -216,11 +243,12 @@ export async function deletePiece(formData: FormData): Promise<void> {
 
   // Si quedan más colores de ese diseño se vuelve a su página; si era el último, al listado.
   if (deleted) {
+    const key: string = deleted.part_num ?? deleted.lego_id;
     const { count } = await supabase
       .from("pieces")
       .select("id", { count: "exact", head: true })
-      .eq("lego_id", deleted.lego_id);
-    if (count) redirect(designHref(deleted.lego_id));
+      .or(designFilter(key));
+    if (count) redirect(designHref(key));
   }
   redirect("/piezas");
 }

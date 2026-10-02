@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { designFilter } from "@/lib/catalog";
 import type { Color, Location, Piece, PieceWithDetails } from "@/lib/types";
 
 /** Colores oficiales de Rebrickable, sin los comodines "[Unknown]" y "[No Color/Any Color]". */
@@ -91,11 +92,15 @@ export async function getPieces(): Promise<PieceWithDetails[]> {
   return ((pieces ?? []) as InventoryRow[]).map((row) => withDetails(row, locations));
 }
 
-/** Todas las variantes (colores) de un ID de diseño, ordenadas por nombre de color. */
-export async function getPiecesByLegoId(legoId: string): Promise<PieceWithDetails[]> {
+/**
+ * Todas las variantes (colores) de un diseño, ordenadas por nombre de color.
+ * `key` es la clave del diseño (ver designKey): las piezas con ese part_num o,
+ * si no están en el catálogo, las de ese ID escrito.
+ */
+export async function getPiecesByDesign(key: string): Promise<PieceWithDetails[]> {
   const supabase = createAdminClient();
   const [{ data: pieces, error }, locations] = await Promise.all([
-    supabase.from("inventory_pieces").select("*").eq("lego_id", legoId),
+    supabase.from("inventory_pieces").select("*").or(designFilter(key)),
     getLocations(),
   ]);
 
@@ -106,6 +111,21 @@ export async function getPiecesByLegoId(legoId: string): Promise<PieceWithDetail
   return ((pieces ?? []) as InventoryRow[])
     .map((row) => withDetails(row, locations))
     .sort((a, b) => a.color.name.localeCompare(b.color.name, "es"));
+}
+
+/**
+ * Clave del diseño de una pieza guardada con ese ID escrito pero que ya tiene
+ * part_num (p. ej. un enlace antiguo a /piezas/diseno/28653 → 3023), o null.
+ */
+export async function findDesignKeyForLegoId(legoId: string): Promise<string | null> {
+  const { data } = await createAdminClient()
+    .from("pieces")
+    .select("part_num")
+    .eq("lego_id", legoId)
+    .not("part_num", "is", null)
+    .limit(1)
+    .maybeSingle();
+  return data?.part_num ?? null;
 }
 
 export async function getPieceById(id: string): Promise<PieceWithDetails | null> {

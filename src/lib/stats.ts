@@ -1,4 +1,5 @@
 import type { PieceWithDetails, Project, ProjectPiece, Set } from "@/lib/types";
+import { designKey } from "@/lib/piece-display";
 
 /**
  * Capa de estadísticas. Preparación de arquitectura: separa el cálculo
@@ -36,8 +37,9 @@ export function calculateInventoryStats(
   projectPieces: ProjectPiece[] = [],
 ): InventoryStats {
   const totalPieces = pieces.reduce((sum, piece) => sum + piece.quantity, 0);
-  // Diseños distintos (lego_id), no filas: cada color es una variante del mismo diseño.
-  const totalUniquePieces = new Set(pieces.map((piece) => piece.lego_id)).size;
+  // Diseños distintos, no filas: cada color es una variante del mismo diseño, y
+  // 28653 y 3023 (la misma pieza del catálogo) cuentan como uno.
+  const totalUniquePieces = new Set(pieces.map(designKey)).size;
   const piecesAvailable = pieces.reduce(
     (sum, piece) => sum + Math.max(0, piece.quantity),
     0,

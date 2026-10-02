@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import type { Color, Piece } from "@/lib/types";
@@ -8,6 +8,8 @@ import type { PieceFormState } from "../actions";
 import {
   findExistingPiece,
   getCatalogPart,
+  lookupElement,
+  type CatalogPart,
   type CatalogPartInfo,
   type ExistingPiece,
   type PartColor,
@@ -20,7 +22,7 @@ import { LegoIdField } from "./LegoIdField";
 import { ColorPicker } from "./ColorPicker";
 
 type DefaultValues = Partial<
-  Pick<Piece, "lego_id" | "element_id" | "color_id" | "quantity" | "image_url">
+  Pick<Piece, "lego_id" | "part_num" | "element_id" | "color_id" | "quantity" | "image_url">
 >;
 
 type Props = {
@@ -33,6 +35,7 @@ type Props = {
 };
 
 const CATALOG_DEBOUNCE_MS = 400;
+const ELEMENT_DEBOUNCE_MS = 400;
 
 function SubmitButton({ label, disabled }: { label: string; disabled?: boolean }) {
   const { pending } = useFormStatus();
@@ -64,41 +67,88 @@ function Field({
 export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel }: Props) {
   const [state, formAction] = useActionState(action, {} as PieceFormState);
   const [legoId, setLegoId] = useState(defaultValues?.lego_id ?? "");
+  // Pieza del catálogo elegida a mano (sugerencia o element ID); null = la decide resolvePartNum.
+  const [partChoice, setPartChoice] = useState<string | null>(defaultValues?.part_num ?? null);
   const [colorId, setColorId] = useState<number | null>(defaultValues?.color_id ?? null);
   // null = no lo ha escrito nadie: se rellena con el element ID del color elegido.
   const [typedElementId, setTypedElementId] = useState<string | null>(
     defaultValues?.element_id ?? null,
   );
-  const [catalog, setCatalog] = useState<{ legoId: string; info: CatalogPartInfo } | null>(null);
-  const [catalogError, setCatalogError] = useState<{ legoId: string; message: string } | null>(
+  const [elementLookup, setElementLookup] = useState<{ elementId: string; found: boolean } | null>(
     null,
   );
+  const [catalog, setCatalog] = useState<{ key: string; info: CatalogPartInfo } | null>(null);
+  const [catalogError, setCatalogError] = useState<{ key: string; message: string } | null>(null);
   const [existing, setExisting] = useState<{ key: string; piece: ExistingPiece | null } | null>(
     null,
   );
+  const elementTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestElement = useRef("");
+  const quantityRef = useRef<HTMLInputElement>(null);
 
   const trimmed = legoId.trim();
+  const typedElement = typedElementId?.trim() ?? "";
+  const catalogKey = `${trimmed}|${typedElement}|${partChoice ?? ""}`;
 
-  // Pieza y colores del catálogo cuando se deja de escribir el ID de diseño.
+  // Pieza y colores del catálogo cuando se deja de escribir.
   useEffect(() => {
     if (!trimmed) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      getCatalogPart(trimmed)
+      getCatalogPart(trimmed, typedElement || null, partChoice)
         .then((info) => {
           if (cancelled) return;
           setCatalogError(null);
-          setCatalog({ legoId: trimmed, info });
+          setCatalog({ key: catalogKey, info });
         })
-        .catch((e: Error) => !cancelled && setCatalogError({ legoId: trimmed, message: e.message }));
+        .catch(
+          (e: Error) => !cancelled && setCatalogError({ key: catalogKey, message: e.message }),
+        );
     }, CATALOG_DEBOUNCE_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [trimmed]);
+  }, [catalogKey, trimmed, typedElement, partChoice]);
 
-  const info = trimmed && catalog?.legoId === trimmed ? catalog.info : null;
+  /**
+   * Element ID de Pick a Brick: al dejar de escribir se rellenan solos el ID de
+   * diseño, la pieza y el color, y el cursor pasa a la cantidad.
+   */
+  function handleElementChange(value: string) {
+    setTypedElementId(value);
+    const id = value.trim();
+    latestElement.current = id;
+    if (elementTimer.current) clearTimeout(elementTimer.current);
+    if (id.length < 4) return;
+    elementTimer.current = setTimeout(async () => {
+      const found = await lookupElement(id).catch(() => null);
+      if (latestElement.current !== id) return;
+      setElementLookup({ elementId: id, found: !!found });
+      if (!found) return;
+      setLegoId(found.design_id ?? found.part_num);
+      setPartChoice(found.part_num);
+      setColorId(found.color_id);
+      quantityRef.current?.focus();
+    }, ELEMENT_DEBOUNCE_MS);
+  }
+
+  // Si se escribe a mano el ID de diseño, la pieza elegida antes deja de valer.
+  function handleLegoIdChange(value: string) {
+    setLegoId(value);
+    setPartChoice(null);
+  }
+
+  const info = trimmed && catalog?.key === catalogKey ? catalog.info : null;
+
+  // Sugerencia elegida: si lo escrito es un ID de diseño de varias piezas (o la
+  // pieza ya se eligió), se conserva lo escrito y solo se fija la pieza; si es
+  // un nombre ("brick 2 x 4"), se escribe su part_num.
+  function handlePick(part: CatalogPart) {
+    if (partChoice !== null || (info?.ambiguousCount ?? 0) > 0) setPartChoice(part.part_num);
+    else setLegoId(part.part_num);
+  }
+
   const inCatalog = !!info && info.colors.length > 0;
   const options: PartColor[] = !info
     ? []
@@ -108,24 +158,26 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
   // Si el color elegido no existe para esta pieza, cuenta como no elegido.
   const selected = options.find((o) => o.color.id === colorId) ?? null;
   const elementId = typedElementId ?? selected?.element_id ?? "";
+  const partNum = info?.part?.part_num ?? null;
 
   let status: "empty" | "loading" | "error" | "ready" = "ready";
   if (!trimmed) status = "empty";
-  else if (!info) status = catalogError?.legoId === trimmed ? "error" : "loading";
+  else if (!info) status = catalogError?.key === catalogKey ? "error" : "loading";
 
-  // En cuanto se elige un color: ¿ya está esa pieza en ese color en el inventario?
+  // En cuanto se elige un color: ¿ya está esa pieza (part_num) en ese color?
   const selectedColorId = selected?.color.id ?? null;
-  const existingKey = selectedColorId === null ? null : `${trimmed}|${selectedColorId}`;
+  const existingKey =
+    selectedColorId === null || !info ? null : `${partNum ?? trimmed}|${selectedColorId}`;
   useEffect(() => {
     if (existingKey === null || selectedColorId === null) return;
     let cancelled = false;
-    findExistingPiece(trimmed, selectedColorId, pieceId)
+    findExistingPiece({ partNum, legoId: trimmed, colorId: selectedColorId, excludeId: pieceId })
       .then((piece) => !cancelled && setExisting({ key: existingKey, piece }))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [existingKey, trimmed, selectedColorId, pieceId]);
+  }, [existingKey, partNum, trimmed, selectedColorId, pieceId]);
   const existingPiece = existing && existing.key === existingKey ? existing.piece : null;
 
   return (
@@ -145,12 +197,32 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
         error={state.fieldErrors?.photo}
       />
 
+      <Field label="ID de elemento (Pick a Brick, opcional)">
+        <input
+          name="element_id"
+          value={elementId}
+          onChange={(e) => handleElementChange(e.target.value)}
+          inputMode="numeric"
+          autoComplete="off"
+          className="input"
+          placeholder="p. ej. 6514002 — rellena pieza y color"
+        />
+        {elementLookup && elementLookup.elementId === typedElement && !elementLookup.found && (
+          <span className="text-xs text-amber">
+            No encuentro ese ID de elemento en el catálogo: rellena la pieza a mano.
+          </span>
+        )}
+      </Field>
+
       <LegoIdField
         value={legoId}
-        onChange={setLegoId}
+        onChange={handleLegoIdChange}
+        onPick={handlePick}
         part={info?.part ?? null}
+        ambiguousCount={info?.ambiguousCount ?? 0}
         error={state.fieldErrors?.lego_id}
       />
+      <input type="hidden" name="part_num" value={partNum ?? ""} />
 
       <div className="flex flex-col gap-2">
         <ColorPicker
@@ -172,27 +244,19 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
                 ? `Ya tienes ${existingPiece.quantity}`
                 : "Ya la tienes en tu inventario (0)"}
             </span>
-            <Link href={designHref(trimmed)} className="font-medium underline">
+            <Link href={designHref(existingPiece.designKey)} className="font-medium underline">
               Ir a la pieza
             </Link>
           </div>
         )}
       </div>
 
-      <Field label="ID de pieza (Element ID, opcional)">
-        <input
-          name="element_id"
-          value={elementId}
-          onChange={(e) => setTypedElementId(e.target.value)}
-          className="input"
-          placeholder="p. ej. 300121"
-        />
-      </Field>
-
       <Field label="Cantidad" error={state.fieldErrors?.quantity}>
         <input
+          ref={quantityRef}
           name="quantity"
           type="number"
+          inputMode="numeric"
           min={0}
           step={1}
           defaultValue={defaultValues?.quantity ?? 0}

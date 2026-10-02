@@ -15,7 +15,10 @@ export type Location = {
 
 export type Piece = {
   id: string;
+  /** ID de diseño de LEGO tal como se escribe (p. ej. 28653, el de Pick a Brick). */
   lego_id: string;
+  /** Pieza de Rebrickable que le corresponde (p. ej. 3023); null si no está en el catálogo. */
+  part_num: string | null;
   element_id: string | null;
   name: string | null;
   description: string | null;

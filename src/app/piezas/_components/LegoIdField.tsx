@@ -6,27 +6,33 @@ import { searchParts, type CatalogPart } from "../catalog-actions";
 type Props = {
   value: string;
   onChange: (value: string) => void;
-  /** Pieza del catálogo que corresponde al ID escrito (null si no está o aún no se sabe). */
+  /** Al tocar una sugerencia (el formulario decide si cambia el ID o solo elige la pieza). */
+  onPick: (part: CatalogPart) => void;
+  /** Pieza del catálogo que corresponde a lo escrito (null si no está, es ambigua o aún no se sabe). */
   part: CatalogPart | null;
+  /** Nº de piezas con ese ID de diseño cuando es ambiguo; 0 si no. */
+  ambiguousCount: number;
   error?: string;
 };
 
 const DEBOUNCE_MS = 300;
 
 /**
- * Campo del ID de diseño con sugerencias del catálogo mientras se escribe y,
- * debajo, la foto y el nombre oficiales de la pieza para confirmar.
+ * Campo del ID de diseño de LEGO con sugerencias del catálogo mientras se
+ * escribe y, debajo, la foto y el nombre oficiales de la pieza para confirmar.
  */
-export function LegoIdField({ value, onChange, part, error }: Props) {
+export function LegoIdField({ value, onChange, onPick, part, ambiguousCount, error }: Props) {
   const [results, setResults] = useState<{ term: string; parts: CatalogPart[] } | null>(null);
   const [open, setOpen] = useState(false);
   const term = value.trim();
+  // Si el ID es ambiguo se piden más sugerencias, para poder elegir entre ellas.
+  const maxResults = ambiguousCount > 0 ? 20 : 8;
 
   useEffect(() => {
     if (term.length < 2) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      searchParts(term)
+      searchParts(term, maxResults)
         .then((parts) => !cancelled && setResults({ term, parts }))
         .catch(() => {});
     }, DEBOUNCE_MS);
@@ -34,11 +40,13 @@ export function LegoIdField({ value, onChange, part, error }: Props) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [term]);
+  }, [term, maxResults]);
 
-  // Solo las sugerencias del texto actual, y sin repetir lo que ya está escrito tal cual.
+  // Solo las del texto actual y sin la pieza que ya está elegida.
   const suggestions =
-    results && results.term === term && !(part && part.part_num === term) ? results.parts : [];
+    results && results.term === term
+      ? results.parts.filter((s) => s.part_num !== part?.part_num)
+      : [];
   const showList = open && suggestions.length > 0;
 
   return (
@@ -78,7 +86,7 @@ export function LegoIdField({ value, onChange, part, error }: Props) {
                 <button
                   type="button"
                   onClick={() => {
-                    onChange(s.part_num);
+                    onPick(s);
                     setOpen(false);
                   }}
                   className="flex min-h-14 w-full items-center gap-3 px-3 py-1 text-left hover:bg-fog active:bg-fog"
@@ -100,6 +108,13 @@ export function LegoIdField({ value, onChange, part, error }: Props) {
         )}
       </div>
       {error && <span className="text-xs text-red-status">{error}</span>}
+
+      {!part && ambiguousCount > 0 && (
+        <span className="text-xs text-amber">
+          El {term} corresponde a {ambiguousCount} piezas: elige la tuya en la lista (o escribe
+          el ID de elemento).
+        </span>
+      )}
 
       {part && (
         <div className="flex items-center gap-3 rounded-lg border border-line bg-paper p-2">

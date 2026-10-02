@@ -1,7 +1,10 @@
+/** Color oficial de Rebrickable (tabla catalog_colors). */
 export type Color = {
-  id: string;
+  id: number;
   name: string;
+  /** '#rrggbb' a partir del rgb de Rebrickable. */
   hex_code: string | null;
+  is_trans: boolean;
 };
 
 export type Location = {
@@ -16,7 +19,7 @@ export type Piece = {
   element_id: string | null;
   name: string | null;
   description: string | null;
-  color_id: string;
+  color_id: number;
   quantity: number;
   location_id: string | null;
   image_url: string | null;

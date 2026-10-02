@@ -69,3 +69,13 @@ Después de aplicarla, rellena el catálogo desde tu ordenador:
 
 Para actualizar el catálogo más adelante, basta con repetir el paso 2: solo
 añade o actualiza filas. Datos: [Rebrickable](https://rebrickable.com/downloads/).
+
+## Sexta migración (colores oficiales en el inventario)
+
+`migrations/20261003100000_pieces_catalog_colors.sql` cambia
+`pieces.color_id` para que apunte a `catalog_colors` (colores oficiales de
+Rebrickable), borra la tabla `colors` y crea la vista `inventory_pieces`
+(inventario con nombre, fotos y color del catálogo). Requiere la migración
+del catálogo y `npm run catalog:import`. Solo funciona con el inventario
+vacío: si hay piezas, da error y no cambia nada. Ejecútala justo antes de
+desplegar el código que la usa.

@@ -27,7 +27,7 @@ const DUPLICATE_MESSAGE = "Ya tienes esta pieza en este color. Edita su cantidad
 async function findExistingPieceId(
   supabase: ReturnType<typeof createAdminClient>,
   legoId: string,
-  colorId: string,
+  colorId: number,
   locationId: string | null,
 ): Promise<string | null> {
   let query = supabase.from("pieces").select("id").eq("lego_id", legoId).eq("color_id", colorId);
@@ -39,7 +39,7 @@ async function findExistingPieceId(
 type ParsedPiece = {
   legoId: string;
   elementId: string | null;
-  colorId: string;
+  colorId: number;
   quantity: number;
   photo: File | null;
   removePhoto: boolean;
@@ -49,7 +49,9 @@ type ParsedPiece = {
 function parsePieceForm(formData: FormData): ParsedPiece {
   const legoId = String(formData.get("lego_id") ?? "").trim();
   const elementId = String(formData.get("element_id") ?? "").trim();
-  const colorId = String(formData.get("color_id") ?? "").trim();
+  const colorRaw = String(formData.get("color_id") ?? "").trim();
+  // Ids de Rebrickable: el 0 es Black, así que no vale comprobar con !colorId.
+  const colorId = Number(colorRaw);
   const quantityRaw = String(formData.get("quantity") ?? "").trim();
   const quantity = Number(quantityRaw);
   const photoRaw = formData.get("photo");
@@ -57,7 +59,7 @@ function parsePieceForm(formData: FormData): ParsedPiece {
 
   const fieldErrors: PieceFieldErrors = {};
   if (!legoId) fieldErrors.lego_id = "El ID de diseño es obligatorio.";
-  if (!colorId) fieldErrors.color_id = "Elige un color.";
+  if (colorRaw === "" || !Number.isInteger(colorId)) fieldErrors.color_id = "Elige un color.";
   if (quantityRaw === "" || !Number.isInteger(quantity) || quantity < 0) {
     fieldErrors.quantity = "La cantidad debe ser un número entero igual o mayor que 0.";
   }

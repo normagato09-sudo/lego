@@ -19,6 +19,8 @@ import { designKey } from "@/lib/piece-display";
 export type InventoryStats = {
   totalPieces: number;
   totalUniquePieces: number;
+  /** Colores distintos (color_id) entre todas las piezas. */
+  totalColors: number;
   piecesAvailable: number;
   piecesUsedInProjects: number | null;
   piecesMissing: number | null;
@@ -40,6 +42,7 @@ export function calculateInventoryStats(
   // Diseños distintos, no filas: cada color es una variante del mismo diseño, y
   // 28653 y 3023 (la misma pieza del catálogo) cuentan como uno.
   const totalUniquePieces = new Set(pieces.map(designKey)).size;
+  const totalColors = new Set(pieces.map((piece) => piece.color_id)).size;
   const piecesAvailable = pieces.reduce(
     (sum, piece) => sum + Math.max(0, piece.quantity),
     0,
@@ -53,6 +56,7 @@ export function calculateInventoryStats(
   return {
     totalPieces,
     totalUniquePieces,
+    totalColors,
     piecesAvailable,
     piecesUsedInProjects,
     // Sin un concepto de "piezas necesarias" por proyecto todavía, no se

@@ -4,6 +4,8 @@ import Script from "next/script";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { UpdateBanner } from "@/components/UpdateBanner";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -88,6 +90,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <InstallPrompt />
+        <UpdateBanner />
+        <PullToRefresh />
       </body>
     </html>
   );

@@ -26,6 +26,8 @@ export function PhotoCropper({ imageSrc, onCancel, onConfirm }: Props) {
       role="dialog"
       aria-modal="true"
       aria-label="Recortar foto"
+      // Arrastrar la foto hacia abajo no debe recargar la página (PullToRefresh).
+      data-no-pull
     >
       <div className="relative flex-1">
         <Cropper

@@ -1,8 +1,10 @@
-import type { Piece } from "@/lib/types";
+import type { PieceWithDetails } from "@/lib/types";
 
-/** Nombre visible de una pieza: su nombre o, si no tiene, el ID de diseño. */
-export function pieceTitle(piece: Pick<Piece, "name" | "lego_id">): string {
-  return piece.name || piece.lego_id;
+/** Nombre visible de una pieza: el suyo, el oficial del catálogo o, si no, el ID de diseño. */
+export function pieceTitle(
+  piece: Pick<PieceWithDetails, "name" | "catalogName" | "lego_id">,
+): string {
+  return piece.name || piece.catalogName || piece.lego_id;
 }
 
 /** Página que agrupa todas las variantes (colores) de un ID de diseño. */

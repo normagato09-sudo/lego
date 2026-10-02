@@ -3,26 +3,16 @@ import type { PieceGroup } from "@/lib/piece-groups";
 import { designHref } from "@/lib/piece-display";
 import { ColorSwatch } from "@/components/ColorSwatch";
 import { Card } from "@/components/Card";
-import { PieceIcon } from "@/components/PieceIcon";
+import { PieceThumb } from "@/components/PieceThumb";
 
 /** Tarjeta de un ID de diseño con el total de todos sus colores. */
 export function DesignCard({ group }: { group: PieceGroup }) {
-  const { legoId, cover, colors, totalQuantity } = group;
+  const { legoId, catalogName, cover, colors, totalQuantity } = group;
 
   return (
     <Link href={designHref(legoId)} className="block">
       <Card padding="sm" className="flex h-full flex-col hover:border-line-strong">
-        <div
-          className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-md"
-          style={{ backgroundColor: cover.color.hex_code ?? "var(--color-fog)" }}
-        >
-          {cover.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={cover.image_url} alt={legoId} className="h-full w-full object-cover" />
-          ) : (
-            <PieceIcon />
-          )}
-        </div>
+        <PieceThumb piece={cover} alt={catalogName ?? legoId} className="mb-2 h-24" />
 
         <div className="flex items-start justify-between gap-2">
           <span className="font-mono text-sm font-medium text-ink">{legoId}</span>
@@ -30,6 +20,7 @@ export function DesignCard({ group }: { group: PieceGroup }) {
             {totalQuantity}
           </span>
         </div>
+        {catalogName && <p className="mt-0.5 line-clamp-2 text-xs text-ink-soft">{catalogName}</p>}
 
         <p className="mt-1 text-xs text-steel">
           {colors.length} {colors.length === 1 ? "color" : "colores"}

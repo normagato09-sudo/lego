@@ -30,6 +30,10 @@ export type Piece = {
 /** Pieza con el color resuelto y una etiqueta de ubicación legible. */
 export type PieceWithDetails = Piece & {
   color: Color;
+  /** Nombre oficial de la pieza en el catálogo de Rebrickable. */
+  catalogName: string | null;
+  /** Foto oficial en ese color o, si no la hay, la foto genérica de la pieza. */
+  catalogImageUrl: string | null;
   locationLabel: string | null;
 };
 

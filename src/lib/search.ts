@@ -45,6 +45,7 @@ export function searchPieces(pieces: PieceWithDetails[], query: string): PieceWi
   return pieces.filter((piece) => {
     const haystack = [
       piece.name,
+      piece.catalogName,
       piece.lego_id,
       piece.element_id,
       piece.color?.name,

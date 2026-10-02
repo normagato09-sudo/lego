@@ -6,7 +6,9 @@ export type PieceGroup = {
   variants: PieceWithDetails[];
   totalQuantity: number;
   colors: Color[];
-  /** Variante cuya foto se muestra (la primera con foto), o la primera si ninguna tiene. */
+  /** Nombre oficial del catálogo (null si la pieza no está en él). */
+  catalogName: string | null;
+  /** Variante cuya foto se muestra: la primera con foto propia, si no la primera con foto oficial. */
   cover: PieceWithDetails;
 };
 
@@ -27,7 +29,11 @@ export function groupPiecesByDesign(pieces: PieceWithDetails[]): PieceGroup[] {
       variants,
       totalQuantity: variants.reduce((sum, v) => sum + v.quantity, 0),
       colors,
-      cover: variants.find((v) => v.image_url) ?? variants[0],
+      catalogName: variants[0].catalogName,
+      cover:
+        variants.find((v) => v.image_url) ??
+        variants.find((v) => v.catalogImageUrl) ??
+        variants[0],
     };
   });
 }

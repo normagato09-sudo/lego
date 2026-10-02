@@ -8,7 +8,7 @@ import { ColorSwatch } from "@/components/ColorSwatch";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { PieceIcon } from "@/components/PieceIcon";
+import { PieceThumb } from "@/components/PieceThumb";
 import { DeletePieceButton } from "../../_components/DeletePieceButton";
 import { QuantityStepper } from "../../_components/QuantityStepper";
 
@@ -34,6 +34,7 @@ export default async function DesignPage({
   if (variants.length === 0) notFound();
 
   const total = variants.reduce((sum, v) => sum + v.quantity, 0);
+  const catalogName = variants[0].catalogName;
   const href = designHref(legoId);
 
   return (
@@ -51,6 +52,7 @@ export default async function DesignPage({
         <div>
           <span className="text-xs text-steel">ID de diseño</span>
           <h1 className="font-mono text-xl font-semibold text-ink">{legoId}</h1>
+          {catalogName && <p className="text-sm text-ink-soft">{catalogName}</p>}
           <p className="text-sm text-steel">
             {variants.length} {variants.length === 1 ? "color" : "colores"} · {total}{" "}
             {total === 1 ? "pieza" : "piezas"} en total
@@ -64,21 +66,11 @@ export default async function DesignPage({
       <div className="flex flex-col gap-3">
         {variants.map((piece) => (
           <Card key={piece.id} padding="md" className="flex flex-col gap-4 sm:flex-row">
-            <div
-              className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md"
-              style={{ backgroundColor: piece.color.hex_code ?? "var(--color-fog)" }}
-            >
-              {piece.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={piece.image_url}
-                  alt={`${legoId} en ${piece.color.name}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <PieceIcon />
-              )}
-            </div>
+            <PieceThumb
+              piece={piece}
+              alt={`${legoId} en ${piece.color.name}`}
+              className="h-20 w-20 shrink-0"
+            />
             <div className="flex flex-1 flex-col gap-3">
               <div>
                 <p className="flex items-center gap-1.5 text-sm font-medium text-ink">

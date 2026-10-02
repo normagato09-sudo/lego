@@ -31,6 +31,7 @@ export default async function EditPiecePage({
           quantity: piece.quantity,
           image_url: piece.image_url,
         }}
+        pieceId={id}
         submitLabel="Guardar cambios"
       />
     </div>

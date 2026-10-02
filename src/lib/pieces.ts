@@ -59,10 +59,20 @@ type InventoryRow = Piece & {
 };
 
 function withDetails(row: InventoryRow, locations: Location[]): PieceWithDetails {
-  const { color_name, color_rgb, color_is_trans, ...piece } = row;
+  const {
+    color_name,
+    color_rgb,
+    color_is_trans,
+    catalog_name,
+    part_img_url,
+    color_img_url,
+    ...piece
+  } = row;
   return {
     ...piece,
     color: { id: piece.color_id, name: color_name, hex_code: `#${color_rgb}`, is_trans: color_is_trans },
+    catalogName: catalog_name,
+    catalogImageUrl: color_img_url ?? part_img_url,
     locationLabel: locationLabel(piece.location_id, locations),
   };
 }

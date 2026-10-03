@@ -23,8 +23,9 @@ type Props = {
 };
 
 /**
- * Selector de color: un desplegable con una cuadrícula de muestras grandes
- * y, debajo, la foto oficial de la pieza en el color elegido con su nombre.
+ * Selector de color: una ventana centrada (modal) con una cuadrícula de
+ * muestras grandes que siempre cabe en la pantalla y tiene su propio scroll,
+ * y, debajo del botón, la foto oficial de la pieza en el color elegido.
  */
 export function ColorPicker({
   status,
@@ -38,7 +39,7 @@ export function ColorPicker({
   error,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const ready = status === "ready";
   const groupId = useId();
@@ -58,7 +59,7 @@ export function ColorPicker({
         <div key={`${prefix}-${title}`} role="group" aria-labelledby={labelId}>
           <p
             id={labelId}
-            className="sticky top-0 z-10 -mx-2 bg-paper px-3 pt-2 pb-1 text-xs font-semibold text-steel"
+            className="sticky top-0 z-10 -mx-3 bg-paper px-3 pt-2 pb-1 text-xs font-semibold text-steel"
           >
             {title}
           </p>
@@ -75,8 +76,7 @@ export function ColorPicker({
                   title={color.name}
                   onClick={() => {
                     onSelect(color.id);
-                    setOpen(false);
-                    triggerRef.current?.focus();
+                    close();
                   }}
                   className={`flex h-12 items-center justify-center rounded-full ${
                     isSelected ? "bg-brick-tint ring-2 ring-brick" : "active:bg-fog"
@@ -92,25 +92,26 @@ export function ColorPicker({
     });
   }
 
-  // Cierra el desplegable al tocar fuera o con Escape.
+  function close() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  // Abre y cierra el <dialog> nativo (atrapa el foco y cierra con Escape) y,
+  // mientras está abierto, la página de detrás no se desplaza.
+  const isOpen = open && ready;
   useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+    const dialog = dialogRef.current;
+    if (!dialog || !isOpen) return;
+    dialog.showModal();
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
+      root.style.overflow = previousOverflow;
+      if (dialog.open) dialog.close();
     };
-  }, [open]);
+  }, [isOpen]);
 
   const placeholder = {
     empty: "Escribe primero el ID de diseño",
@@ -126,56 +127,81 @@ export function ColorPicker({
       </span>
       <input type="hidden" name="color_id" value={selected?.color.id ?? ""} />
 
-      <div ref={rootRef} className="relative">
-        <button
-          ref={triggerRef}
-          type="button"
-          disabled={!ready}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-labelledby="color-label"
-          onClick={() => setOpen((o) => !o)}
-          className="input flex min-h-12 items-center gap-3 text-left disabled:opacity-60"
-        >
-          {selected ? (
-            <ColorSwatch color={selected.color} size={28} />
-          ) : (
-            <span className="text-steel">{placeholder}</span>
-          )}
-          <span aria-hidden className="ml-auto text-steel">
-            {open ? "▲" : "▼"}
-          </span>
-        </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={!ready}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-labelledby="color-label"
+        onClick={() => setOpen(true)}
+        className="input flex min-h-12 items-center gap-3 text-left disabled:opacity-60"
+      >
+        {selected ? (
+          <ColorSwatch color={selected.color} size={28} />
+        ) : (
+          <span className="text-steel">{placeholder}</span>
+        )}
+        <span aria-hidden className="ml-auto text-steel">
+          ▼
+        </span>
+      </button>
 
-        {open && ready && (
-          <div
-            role="listbox"
-            aria-labelledby="color-label"
-            className="absolute inset-x-0 top-full z-20 mt-1 max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-line-strong bg-paper px-2 pb-2 shadow-lg"
-          >
-            {renderGroups(groups, "catalog")}
-
-            {otherGroups.length > 0 && (
-              <>
-                <p className="-mx-2 mt-3 border-t border-line-strong px-3 pt-3 text-sm font-semibold text-ink">
-                  Otros colores (no constan para esta pieza)
-                </p>
-                {renderGroups(otherGroups, "other")}
-              </>
-            )}
-
-            {inCatalog && onToggleShowAll && (
+      {/* El preflight de Tailwind quita el margin:auto del <dialog>: m-auto lo centra. */}
+      <dialog
+        ref={dialogRef}
+        aria-labelledby={`${groupId}-title`}
+        // Escape: el navegador cierra el diálogo; aquí se sincroniza el estado.
+        onClose={() => open && close()}
+        // Un clic en el fondo oscuro llega al propio <dialog> (el contenido lo tapa entero).
+        onClick={(e) => e.target === e.currentTarget && close()}
+        // Deslizar dentro no debe recargar la página (PullToRefresh).
+        data-no-pull
+        className="m-auto h-fit max-h-[85dvh] w-[calc(100vw-2rem)] max-w-lg overflow-hidden rounded-xl border border-line-strong bg-paper p-0 text-ink shadow-xl backdrop:bg-black/50"
+      >
+        {isOpen && (
+          <div className="flex max-h-[85dvh] flex-col">
+            <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <h2 id={`${groupId}-title`} className="text-base font-semibold">
+                Elige un color
+              </h2>
               <button
                 type="button"
-                onClick={onToggleShowAll}
-                className="btn-ghost mt-3 w-full text-xs"
+                onClick={close}
+                aria-label="Cerrar"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-lg text-steel hover:bg-fog active:bg-fog"
               >
-                {showAll ? "Mostrar solo los colores del catálogo" : "Mostrar todos los colores"}
+                ✕
               </button>
+            </div>
+
+            <div
+              role="listbox"
+              aria-labelledby={`${groupId}-title`}
+              className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 pb-3"
+            >
+              {renderGroups(groups, "catalog")}
+
+              {otherGroups.length > 0 && (
+                <>
+                  <p className="-mx-3 mt-3 border-t border-line-strong px-3 pt-3 text-sm font-semibold text-ink">
+                    Otros colores (no constan para esta pieza)
+                  </p>
+                  {renderGroups(otherGroups, "other")}
+                </>
+              )}
+            </div>
+
+            {inCatalog && onToggleShowAll && (
+              <div className="border-t border-line px-4 py-3">
+                <button type="button" onClick={onToggleShowAll} className="btn-ghost w-full text-xs">
+                  {showAll ? "Mostrar solo los colores del catálogo" : "Mostrar todos los colores"}
+                </button>
+              </div>
             )}
           </div>
         )}
-      </div>
+      </dialog>
 
       {ready && !inCatalog && (
         <span className="text-xs text-amber">

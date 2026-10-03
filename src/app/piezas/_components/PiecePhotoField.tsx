@@ -160,6 +160,7 @@ export function PiecePhotoField({ initialUrl = null, error }: Props) {
           <label className="btn-ghost cursor-pointer text-xs">
             Hacer foto
             <input
+              id="piece-photo-camera"
               type="file"
               accept="image/*"
               capture="environment"

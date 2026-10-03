@@ -70,6 +70,8 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
   // Pieza del catálogo elegida a mano (sugerencia o element ID); null = la decide resolvePartNum.
   const [partChoice, setPartChoice] = useState<string | null>(defaultValues?.part_num ?? null);
   const [colorId, setColorId] = useState<number | null>(defaultValues?.color_id ?? null);
+  // "Mostrar todos los colores": también los que el catálogo no tiene para esta pieza.
+  const [showAllColors, setShowAllColors] = useState(false);
   // null = no lo ha escrito nadie: se rellena con el element ID del color elegido.
   const [typedElementId, setTypedElementId] = useState<string | null>(
     defaultValues?.element_id ?? null,
@@ -150,10 +152,23 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
   }
 
   const inCatalog = !!info && info.colors.length > 0;
+  // Al editar una pieza guardada en un color que no está en el catálogo, se muestran todos.
+  const savedOffCatalog =
+    inCatalog &&
+    colorId !== null &&
+    colorId === defaultValues?.color_id &&
+    !info.colors.some((o) => o.color.id === colorId);
+  const showAll = showAllColors || savedOffCatalog;
+  const catalogIds = new Set(info?.colors.map((o) => o.color.id));
+  const extraColors: PartColor[] = colors
+    .filter((color) => !catalogIds.has(color.id))
+    .map((color) => ({ color, img_url: null, element_id: null, offCatalog: true }));
   const options: PartColor[] = !info
     ? []
     : inCatalog
-      ? info.colors
+      ? showAll
+        ? [...info.colors, ...extraColors]
+        : info.colors
       : colors.map((color) => ({ color, img_url: null, element_id: null }));
   // Si el color elegido no existe para esta pieza, cuenta como no elegido.
   const selected = options.find((o) => o.color.id === colorId) ?? null;
@@ -229,6 +244,9 @@ export function PieceForm({ action, colors, defaultValues, pieceId, submitLabel 
           status={status}
           options={options}
           inCatalog={inCatalog}
+          showAll={showAll}
+          // Si se ocultan, el color elegido fuera del catálogo deja de contar como elegido.
+          onToggleShowAll={savedOffCatalog ? undefined : () => setShowAllColors((v) => !v)}
           selected={selected}
           onSelect={setColorId}
           legoId={trimmed}

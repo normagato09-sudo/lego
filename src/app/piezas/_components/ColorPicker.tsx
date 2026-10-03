@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { ColorSwatch } from "@/components/ColorSwatch";
-import { groupByColorFamily } from "@/lib/color-families";
+import { groupByColorFamily, type ColorGroup } from "@/lib/color-families";
 import type { PartColor } from "../catalog-actions";
 
 type Props = {
@@ -11,6 +11,10 @@ type Props = {
   options: PartColor[];
   /** false = la pieza no está en el catálogo y `options` son todos los colores. */
   inCatalog: boolean;
+  /** Se ven también los colores que no constan para esta pieza (en su propia sección). */
+  showAll: boolean;
+  /** Alterna showAll; sin él no se muestra el botón. */
+  onToggleShowAll?: () => void;
   selected: PartColor | null;
   onSelect: (colorId: number) => void;
   /** Texto alternativo de la foto (el ID de diseño). */
@@ -26,6 +30,8 @@ export function ColorPicker({
   status,
   options,
   inCatalog,
+  showAll,
+  onToggleShowAll,
   selected,
   onSelect,
   legoId,
@@ -36,7 +42,55 @@ export function ColorPicker({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const ready = status === "ready";
   const groupId = useId();
-  const groups = groupByColorFamily(options, (o) => o.color);
+  const groups = groupByColorFamily(
+    options.filter((o) => !o.offCatalog),
+    (o) => o.color,
+  );
+  const otherGroups = groupByColorFamily(
+    options.filter((o) => o.offCatalog),
+    (o) => o.color,
+  );
+
+  function renderGroups(list: ColorGroup<PartColor>[], prefix: string) {
+    return list.map(({ title, items }, i) => {
+      const labelId = `${groupId}-${prefix}-${i}`;
+      return (
+        <div key={`${prefix}-${title}`} role="group" aria-labelledby={labelId}>
+          <p
+            id={labelId}
+            className="sticky top-0 z-10 -mx-2 bg-paper px-3 pt-2 pb-1 text-xs font-semibold text-steel"
+          >
+            {title}
+          </p>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
+            {items.map(({ color }) => {
+              const isSelected = color.id === selected?.color.id;
+              return (
+                <button
+                  key={color.id}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-label={color.name}
+                  title={color.name}
+                  onClick={() => {
+                    onSelect(color.id);
+                    setOpen(false);
+                    triggerRef.current?.focus();
+                  }}
+                  className={`flex h-12 items-center justify-center rounded-full ${
+                    isSelected ? "bg-brick-tint ring-2 ring-brick" : "active:bg-fog"
+                  }`}
+                >
+                  <ColorSwatch color={color} size={40} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    });
+  }
 
   // Cierra el desplegable al tocar fuera o con Escape.
   useEffect(() => {
@@ -99,41 +153,26 @@ export function ColorPicker({
             aria-labelledby="color-label"
             className="absolute inset-x-0 top-full z-20 mt-1 max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-line-strong bg-paper px-2 pb-2 shadow-lg"
           >
-            {groups.map(({ title, items }, i) => (
-              <div key={title} role="group" aria-labelledby={`${groupId}-${i}`}>
-                <p
-                  id={`${groupId}-${i}`}
-                  className="sticky top-0 z-10 -mx-2 bg-paper px-3 pt-2 pb-1 text-xs font-semibold text-steel"
-                >
-                  {title}
+            {renderGroups(groups, "catalog")}
+
+            {otherGroups.length > 0 && (
+              <>
+                <p className="-mx-2 mt-3 border-t border-line-strong px-3 pt-3 text-sm font-semibold text-ink">
+                  Otros colores (no constan para esta pieza)
                 </p>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
-                  {items.map(({ color }) => {
-                    const isSelected = color.id === selected?.color.id;
-                    return (
-                      <button
-                        key={color.id}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        aria-label={color.name}
-                        title={color.name}
-                        onClick={() => {
-                          onSelect(color.id);
-                          setOpen(false);
-                          triggerRef.current?.focus();
-                        }}
-                        className={`flex h-12 items-center justify-center rounded-full ${
-                          isSelected ? "bg-brick-tint ring-2 ring-brick" : "active:bg-fog"
-                        }`}
-                      >
-                        <ColorSwatch color={color} size={40} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                {renderGroups(otherGroups, "other")}
+              </>
+            )}
+
+            {inCatalog && onToggleShowAll && (
+              <button
+                type="button"
+                onClick={onToggleShowAll}
+                className="btn-ghost mt-3 w-full text-xs"
+              >
+                {showAll ? "Mostrar solo los colores del catálogo" : "Mostrar todos los colores"}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -161,6 +200,15 @@ export function ColorPicker({
           </div>
           <span className="text-xs text-steel">{selected.color.name}</span>
         </div>
+      )}
+      {selected?.offCatalog && (
+        <span className="text-center text-xs text-amber">
+          Según el catálogo esta pieza no existe en {selected.color.name}: no hay foto oficial ni
+          ID de elemento.{" "}
+          <label htmlFor="piece-photo-camera" className="cursor-pointer font-medium underline">
+            Hacer foto
+          </label>
+        </span>
       )}
     </div>
   );

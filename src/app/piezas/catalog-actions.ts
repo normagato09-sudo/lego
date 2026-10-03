@@ -17,6 +17,8 @@ export type PartColor = {
   color: Color;
   img_url: string | null;
   element_id: string | null;
+  /** true = color añadido con "Mostrar todos los colores": el catálogo no lo tiene para esta pieza. */
+  offCatalog?: boolean;
 };
 
 export type CatalogPartInfo = {

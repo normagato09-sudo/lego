@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findSamePiece, partNumsForDesignId, resolvePartNum, type SamePiece } from "@/lib/catalog";
+import { compareColors } from "@/lib/color-families";
 import type { Color } from "@/lib/types";
 
 /** Pieza del catálogo de Rebrickable, con su foto representativa. */
@@ -76,12 +77,8 @@ export async function getCatalogPart(
       img_url: r.img_url,
       element_id: r.element_id,
     }))
-    // Opacos primero y transparentes al final, cada grupo por nombre.
-    .sort(
-      (a, b) =>
-        Number(a.color.is_trans) - Number(b.color.is_trans) ||
-        a.color.name.localeCompare(b.color.name, "es"),
-    );
+    // Por familias de color, de claro a oscuro; transparentes al final.
+    .sort((a, b) => compareColors(a.color, b.color));
 
   return { part: part as CatalogPart, colors, ambiguousCount: 0 };
 }

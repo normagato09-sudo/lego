@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { designFilter } from "@/lib/catalog";
+import { compareColors } from "@/lib/color-families";
 import type { Color, Location, Piece, PieceWithDetails } from "@/lib/types";
 
 /** Colores oficiales de Rebrickable, sin los comodines "[Unknown]" y "[No Color/Any Color]". */
@@ -93,7 +94,7 @@ export async function getPieces(): Promise<PieceWithDetails[]> {
 }
 
 /**
- * Todas las variantes (colores) de un diseño, ordenadas por nombre de color.
+ * Todas las variantes (colores) de un diseño, ordenadas por familia de color.
  * `key` es la clave del diseño (ver designKey): las piezas con ese part_num o,
  * si no están en el catálogo, las de ese ID escrito.
  */
@@ -110,7 +111,7 @@ export async function getPiecesByDesign(key: string): Promise<PieceWithDetails[]
 
   return ((pieces ?? []) as InventoryRow[])
     .map((row) => withDetails(row, locations))
-    .sort((a, b) => a.color.name.localeCompare(b.color.name, "es"));
+    .sort((a, b) => compareColors(a.color, b.color));
 }
 
 /**

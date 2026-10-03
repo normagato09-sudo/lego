@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ColorSwatch } from "@/components/ColorSwatch";
+import { groupByColorFamily } from "@/lib/color-families";
 import type { PartColor } from "../catalog-actions";
 
 type Props = {
@@ -34,6 +35,8 @@ export function ColorPicker({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const ready = status === "ready";
+  const groupId = useId();
+  const groups = groupByColorFamily(options, (o) => o.color);
 
   // Cierra el desplegable al tocar fuera o con Escape.
   useEffect(() => {
@@ -94,33 +97,43 @@ export function ColorPicker({
           <div
             role="listbox"
             aria-labelledby="color-label"
-            className="absolute inset-x-0 top-full z-20 mt-1 max-h-[60vh] overflow-y-auto rounded-lg border border-line-strong bg-paper p-2 shadow-lg"
+            className="absolute inset-x-0 top-full z-20 mt-1 max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-line-strong bg-paper px-2 pb-2 shadow-lg"
           >
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
-              {options.map(({ color }) => {
-                const isSelected = color.id === selected?.color.id;
-                return (
-                  <button
-                    key={color.id}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    aria-label={color.name}
-                    title={color.name}
-                    onClick={() => {
-                      onSelect(color.id);
-                      setOpen(false);
-                      triggerRef.current?.focus();
-                    }}
-                    className={`flex h-12 items-center justify-center rounded-full ${
-                      isSelected ? "bg-brick-tint ring-2 ring-brick" : "active:bg-fog"
-                    }`}
-                  >
-                    <ColorSwatch color={color} size={40} />
-                  </button>
-                );
-              })}
-            </div>
+            {groups.map(({ title, items }, i) => (
+              <div key={title} role="group" aria-labelledby={`${groupId}-${i}`}>
+                <p
+                  id={`${groupId}-${i}`}
+                  className="sticky top-0 z-10 -mx-2 bg-paper px-3 pt-2 pb-1 text-xs font-semibold text-steel"
+                >
+                  {title}
+                </p>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(3rem,1fr))] gap-1">
+                  {items.map(({ color }) => {
+                    const isSelected = color.id === selected?.color.id;
+                    return (
+                      <button
+                        key={color.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        aria-label={color.name}
+                        title={color.name}
+                        onClick={() => {
+                          onSelect(color.id);
+                          setOpen(false);
+                          triggerRef.current?.focus();
+                        }}
+                        className={`flex h-12 items-center justify-center rounded-full ${
+                          isSelected ? "bg-brick-tint ring-2 ring-brick" : "active:bg-fog"
+                        }`}
+                      >
+                        <ColorSwatch color={color} size={40} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

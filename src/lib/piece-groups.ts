@@ -1,5 +1,6 @@
 import type { Color, PieceWithDetails } from "@/lib/types";
 import { designKey } from "@/lib/piece-display";
+import { compareColors } from "@/lib/color-families";
 
 /** Todas las variantes (colores) de un mismo diseño (ver designKey). */
 export type PieceGroup = {
@@ -16,7 +17,7 @@ export type PieceGroup = {
   cover: PieceWithDetails;
 };
 
-/** Agrupa por diseño respetando el orden de llegada; dentro, variantes por nombre de color. */
+/** Agrupa por diseño respetando el orden de llegada; dentro, variantes por familia de color. */
 export function groupPiecesByDesign(pieces: PieceWithDetails[]): PieceGroup[] {
   const byKey = new Map<string, PieceWithDetails[]>();
   for (const piece of pieces) {
@@ -27,7 +28,7 @@ export function groupPiecesByDesign(pieces: PieceWithDetails[]): PieceGroup[] {
   }
 
   return [...byKey].map(([key, list]) => {
-    const variants = [...list].sort((a, b) => a.color.name.localeCompare(b.color.name, "es"));
+    const variants = [...list].sort((a, b) => compareColors(a.color, b.color));
     const colors = [...new Map(variants.map((v) => [v.color.id, v.color])).values()];
     return {
       key,

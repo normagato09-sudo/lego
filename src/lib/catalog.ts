@@ -63,7 +63,7 @@ export async function resolvePartNum(
 }
 
 /** Valor entre comillas para un filtro .or() de PostgREST. */
-function quote(value: string): string {
+export function quote(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 

@@ -20,9 +20,6 @@ export function SiteHeader() {
           <Button href="/piezas" variant="ghost">
             Piezas
           </Button>
-          <Button href="/catalogo" variant="ghost">
-            Catálogo
-          </Button>
         </nav>
         <div className="ml-auto">
           <ThemeToggle />

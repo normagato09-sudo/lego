@@ -31,10 +31,12 @@ const PLURAL: Record<FormaId, string> = {
 /** Posición de cada pieza en el catálogo, para ordenar la lista igual. */
 const ORDEN = new Map(PIEZAS.map((p, i) => [p.id, i]));
 
-export function ListaPiezas({ filas }: { filas: FilaLista[] }) {
+export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; ubicacionInicial?: string }) {
   const [busqueda, setBusqueda] = useState("");
   const [formaFiltro, setFormaFiltro] = useState<FormaId>();
   const [colorFiltro, setColorFiltro] = useState<string>();
+  // "sin" = solo las piezas sin ordenar; un código = solo esa bolsa.
+  const [ubicacionFiltro, setUbicacionFiltro] = useState(ubicacionInicial);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [error, setError] = useState<string>();
   const [, empezar] = useTransition();
@@ -60,6 +62,7 @@ export function ListaPiezas({ filas }: { filas: FilaLista[] }) {
   const visibles = todas.filter((f) => {
     if (formaFiltro && f.datos!.forma !== formaFiltro) return false;
     if (colorFiltro && f.color !== colorFiltro) return false;
+    if (ubicacionFiltro === "sin" ? f.ubicacion : ubicacionFiltro && f.ubicacion !== ubicacionFiltro) return false;
     if (busqueda.trim()) {
       const forma = FORMAS.find((x) => x.id === f.datos!.forma)!;
       const sub = forma.subtipos.find((s) => s.id === f.datos!.subtipo)!;
@@ -153,6 +156,22 @@ export function ListaPiezas({ filas }: { filas: FilaLista[] }) {
               />
             </button>
           ))}
+        </div>
+      )}
+
+      {ubicacionFiltro && (
+        <div className="flex items-center gap-2 rounded-[10px] border border-brick bg-brick-soft p-2 pl-3 text-sm">
+          <span className="flex-1">
+            Mostrando:{" "}
+            <strong className="font-mono">{ubicacionFiltro === "sin" ? "Sin ordenar" : ubicacionFiltro}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setUbicacionFiltro(undefined)}
+            className="h-11 rounded-[10px] border border-line bg-card px-3 font-semibold"
+          >
+            Ver todas
+          </button>
         </div>
       )}
 

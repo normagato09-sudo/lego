@@ -17,29 +17,18 @@ export function CabeceraApp({ activa }: { activa: "piezas" | "cajas" }) {
         <span className="font-display text-xl font-bold">LEGO Inventario</span>
       </div>
       <nav className="mt-1 flex px-2">
-        {pestanas.map((p) =>
-          p.id === "cajas" ? (
-            // La pantalla Cajas llega en el paso 7.
-            <span
-              key={p.id}
-              aria-disabled="true"
-              className="flex h-11 items-center border-b-2 border-transparent px-3 font-medium text-ink/35"
-            >
-              {p.nombre}
-            </span>
-          ) : (
-            <Link
-              key={p.id}
-              href={p.href}
-              aria-current={p.id === activa ? "page" : undefined}
-              className={`flex h-11 items-center border-b-2 px-3 font-medium ${
-                p.id === activa ? "border-brick text-ink" : "border-transparent text-ink/60"
-              }`}
-            >
-              {p.nombre}
-            </Link>
-          ),
-        )}
+        {pestanas.map((p) => (
+          <Link
+            key={p.id}
+            href={p.href}
+            aria-current={p.id === activa ? "page" : undefined}
+            className={`flex h-11 items-center border-b-2 px-3 font-medium ${
+              p.id === activa ? "border-brick text-ink" : "border-transparent text-ink/60"
+            }`}
+          >
+            {p.nombre}
+          </Link>
+        ))}
       </nav>
     </header>
   );

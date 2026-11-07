@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { connection } from "next/server";
 import { CabeceraApp } from "@/components/CabeceraApp";
 import { ListaPiezas } from "@/components/ListaPiezas";
 import { leerPiezas, type FilaPieza } from "@/lib/piezas";
 
-async function Lista() {
-  await connection();
+async function Lista({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  // ?ubicacion=C2-B03 (o "sin") llega al tocar una bolsa en Cajas.
+  const { ubicacion } = await searchParams;
   let filas: FilaPieza[] | null = null;
   try {
     filas = await leerPiezas();
@@ -20,15 +20,22 @@ async function Lista() {
       </p>
     );
   }
-  return <ListaPiezas filas={filas} />;
+  const filtro = typeof ubicacion === "string" && ubicacion ? ubicacion.toUpperCase() : undefined;
+  return (
+    <ListaPiezas
+      key={filtro ?? "todas"}
+      filas={filas}
+      ubicacionInicial={filtro === "SIN" ? "sin" : filtro}
+    />
+  );
 }
 
-export default function Home() {
+export default function Home(props: PageProps<"/">) {
   return (
     <div className="mx-auto min-h-screen w-full max-w-[390px]">
       <CabeceraApp activa="piezas" />
       <Suspense fallback={<p className="px-4 pt-6 text-sm text-ink/60">Cargando piezas…</p>}>
-        <Lista />
+        <Lista searchParams={props.searchParams} />
       </Suspense>
       <Link
         href="/anadir"

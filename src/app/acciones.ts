@@ -111,6 +111,70 @@ export async function borrarPieza(id: number): Promise<EstadoGuardar> {
   redirect("/");
 }
 
+export type FilaCopia = {
+  pieza: string;
+  color: string | null;
+  cantidad: number;
+  ubicacion: string | null;
+};
+
+/**
+ * Carga una copia de seguridad: BORRA todas las piezas actuales y pone
+ * las de la copia. Si falla algo, no se cambia nada.
+ */
+export async function cargarCopia(filas: FilaCopia[]): Promise<{ error?: string; cargadas?: number }> {
+  if (!Array.isArray(filas) || filas.length > 5000) {
+    return { error: "El archivo no parece una copia de LEGO Inventario." };
+  }
+
+  const limpias: { pieza: Pieza; color: string | null; cantidad: number; ubicacion: string | null }[] = [];
+  for (const f of filas) {
+    const pieza = buscarPieza(String(f?.pieza ?? ""));
+    const color = f?.color ? String(f.color) : null;
+    const cantidad = Number(f?.cantidad);
+    const ubicacion = normalizarUbicacion(String(f?.ubicacion ?? ""));
+    if (
+      !pieza ||
+      (color && !buscarColor(color)) ||
+      !Number.isInteger(cantidad) ||
+      cantidad < 0 ||
+      cantidad > 9999 ||
+      ubicacion === false
+    ) {
+      return { error: "La copia tiene piezas que no se entienden. No se ha cambiado nada." };
+    }
+    // Si la misma pieza + color + ubicación sale dos veces, se suman.
+    const igual = limpias.find((x) => x.pieza.id === pieza.id && x.color === color && x.ubicacion === ubicacion);
+    if (igual) igual.cantidad = Math.min(9999, igual.cantidad + cantidad);
+    else limpias.push({ pieza, color, cantidad, ubicacion });
+  }
+
+  try {
+    const sql = getSql();
+    await sql.transaction([
+      sql`delete from piezas`,
+      sql`
+        insert into piezas (forma, subtipo, pieza, color, cantidad, ubicacion)
+        select * from unnest(
+          ${limpias.map((f) => f.pieza.forma)}::text[],
+          ${limpias.map((f) => f.pieza.subtipo)}::text[],
+          ${limpias.map((f) => f.pieza.id)}::text[],
+          ${limpias.map((f) => f.color)}::text[],
+          ${limpias.map((f) => f.cantidad)}::integer[],
+          ${limpias.map((f) => f.ubicacion)}::text[]
+        )
+      `,
+    ]);
+  } catch (e) {
+    console.error("No se pudo cargar la copia", e);
+    return { error: "No se pudo cargar la copia. Revisa la conexión. No se ha cambiado nada." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/cajas");
+  return { cargadas: limpias.length };
+}
+
 /** Suma o resta unidades (nunca baja de 0). Devuelve la cantidad nueva o null si falla. */
 export async function cambiarCantidad(id: number, cambio: number): Promise<number | null> {
   if (!Number.isInteger(id) || (cambio !== 1 && cambio !== -1)) return null;

@@ -9,7 +9,7 @@ import { coincide } from "@/lib/texto";
 const ELEGIDO = "border-brick bg-brick-soft";
 const NORMAL = "border-line bg-card";
 
-export function ElegirPieza({ piezaInicial }: { piezaInicial?: string }) {
+export function ElegirPieza({ piezaInicial, editarId }: { piezaInicial?: string; editarId?: number }) {
   const inicial = piezaInicial ? buscarPieza(piezaInicial) : undefined;
   const [busqueda, setBusqueda] = useState("");
   const [formaId, setFormaId] = useState<FormaId | undefined>(inicial?.forma);
@@ -123,7 +123,7 @@ export function ElegirPieza({ piezaInicial }: { piezaInicial?: string }) {
           </p>
           {elegida ? (
             <Link
-              href={`/anadir/detalles?pieza=${elegida.id}`}
+              href={editarId ? `/pieza/${editarId}?pieza=${elegida.id}` : `/anadir/detalles?pieza=${elegida.id}`}
               className="flex h-12 items-center rounded-[10px] bg-brick px-6 font-semibold text-white"
             >
               Siguiente

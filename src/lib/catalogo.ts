@@ -349,31 +349,84 @@ export type Color = {
   nombre: string;
   hex: string;
   transparente?: boolean;
+  /** Color escrito a mano con "Otro color" (no está en la paleta). */
+  otro?: boolean;
 };
 
+// Ordenados por familias: blancos y grises, rojos y rosas, naranjas y marrones,
+// amarillos, verdes, azules, morados, transparentes y metálicos.
+// Los códigos (id) de los colores que ya existían no cambian.
 export const COLORES: Color[] = [
+  // Blancos y grises
   { id: "blanco", nombre: "Blanco", hex: "#F4F4F4" },
-  { id: "negro", nombre: "Negro", hex: "#1B2A34" },
   { id: "gris-claro", nombre: "Gris claro", hex: "#A0A5A9" },
   { id: "gris-oscuro", nombre: "Gris oscuro", hex: "#6C6E68" },
+  { id: "negro", nombre: "Negro", hex: "#1B2A34" },
+  // Rojos y rosas
   { id: "rojo", nombre: "Rojo", hex: "#C91A09" },
-  { id: "naranja", nombre: "Naranja", hex: "#FE8A18" },
-  { id: "amarillo", nombre: "Amarillo", hex: "#F2CD37" },
-  { id: "verde", nombre: "Verde", hex: "#237841" },
-  { id: "azul", nombre: "Azul", hex: "#0055BF" },
-  { id: "azul-claro", nombre: "Azul claro", hex: "#9FC3E9" },
+  { id: "rojo-oscuro", nombre: "Rojo oscuro", hex: "#720E0F" },
+  { id: "coral", nombre: "Coral", hex: "#FF698F" },
   { id: "rosa", nombre: "Rosa", hex: "#E4ADC8" },
-  { id: "beige", nombre: "Beige", hex: "#E4CD9E" },
-  { id: "caramelo", nombre: "Caramelo", hex: "#D09168" },
+  { id: "rosa-oscuro", nombre: "Rosa oscuro", hex: "#C870A0" },
+  { id: "magenta", nombre: "Magenta", hex: "#923978" },
+  // Naranjas y marrones
+  { id: "naranja-claro", nombre: "Naranja claro", hex: "#F8BB3D" },
+  { id: "naranja", nombre: "Naranja", hex: "#FE8A18" },
   { id: "naranja-oscuro", nombre: "Naranja oscuro", hex: "#A95500" },
+  { id: "beige", nombre: "Beige", hex: "#E4CD9E" },
+  { id: "beige-oscuro", nombre: "Beige oscuro", hex: "#958A73" },
+  { id: "caramelo", nombre: "Caramelo", hex: "#D09168" },
+  { id: "marron-claro", nombre: "Marrón claro", hex: "#AA7D55" },
   { id: "marron", nombre: "Marrón", hex: "#582A12" },
   { id: "marron-oscuro", nombre: "Marrón oscuro", hex: "#352100" },
-  { id: "dorado", nombre: "Dorado", hex: "#DBAC34" },
+  // Amarillos
+  { id: "amarillo-claro", nombre: "Amarillo claro", hex: "#FFF03A" },
+  { id: "amarillo", nombre: "Amarillo", hex: "#F2CD37" },
+  // Verdes
+  { id: "verde-lima", nombre: "Verde lima", hex: "#BBE90B" },
+  { id: "verde", nombre: "Verde", hex: "#237841" },
+  { id: "verde-oscuro", nombre: "Verde oscuro", hex: "#184632" },
+  { id: "verde-oliva", nombre: "Verde oliva", hex: "#9B9A5A" },
+  { id: "verde-arena", nombre: "Verde arena", hex: "#A0BCAC" },
+  // Azules
+  { id: "azul-claro", nombre: "Azul claro", hex: "#9FC3E9" },
+  { id: "azul-celeste", nombre: "Azul celeste", hex: "#36AEBF" },
+  { id: "azul", nombre: "Azul", hex: "#0055BF" },
+  { id: "azul-arena", nombre: "Azul arena", hex: "#6074A1" },
+  { id: "azul-oscuro", nombre: "Azul oscuro", hex: "#0A3463" },
+  // Morados
+  { id: "lila-claro", nombre: "Lila claro", hex: "#E1D5ED" },
+  { id: "lila", nombre: "Lila", hex: "#AC78BA" },
+  // Transparentes
   { id: "transparente", nombre: "Transparente", hex: "#DDEEF5", transparente: true },
+  { id: "transparente-rojo", nombre: "Transparente rojo", hex: "#C91A09", transparente: true },
+  { id: "transparente-azul", nombre: "Transparente azul", hex: "#0055BF", transparente: true },
+  { id: "transparente-amarillo", nombre: "Transparente amarillo", hex: "#F5CD2F", transparente: true },
+  { id: "transparente-verde", nombre: "Transparente verde", hex: "#84B68D", transparente: true },
+  // Metálicos
+  { id: "plateado", nombre: "Plateado", hex: "#898788" },
+  { id: "dorado", nombre: "Dorado", hex: "#DBAC34" },
 ];
 
 const colorPorId = new Map(COLORES.map((c) => [c.id, c]));
 
+/** Prefijo con el que se guardan los colores escritos a mano: "otro:Verde menta". */
+export const PREFIJO_OTRO = "otro:";
+export const LARGO_MAXIMO_OTRO = 30;
+
+/** Limpia el nombre escrito: sin espacios de más. Devuelve "" si no vale. */
+export function limpiarNombreOtro(texto: string): string {
+  const limpio = texto.replace(/\s+/g, " ").trim();
+  if (!limpio || limpio.length > LARGO_MAXIMO_OTRO || /[\u0000-\u001f]/.test(limpio)) return "";
+  return limpio;
+}
+
 export function buscarColor(id: string | null | undefined): Color | undefined {
-  return id ? colorPorId.get(id) : undefined;
+  if (!id) return undefined;
+  if (id.startsWith(PREFIJO_OTRO)) {
+    const nombre = limpiarNombreOtro(id.slice(PREFIJO_OTRO.length));
+    // Se pinta en gris neutro porque no sabemos su color exacto.
+    return nombre ? { id: PREFIJO_OTRO + nombre, nombre, hex: "#CFCCC4", otro: true } : undefined;
+  }
+  return colorPorId.get(id);
 }

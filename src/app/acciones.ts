@@ -17,7 +17,12 @@ function leerFormulario(datos: FormData, minimo: number): Datos | string {
   if (!pieza) return "Esa pieza no está en el catálogo.";
 
   const colorId = String(datos.get("color") ?? "");
-  if (colorId && !buscarColor(colorId)) return "Ese color no está en la lista.";
+  const color = colorId ? buscarColor(colorId) : undefined;
+  if (colorId && !color) {
+    return colorId.startsWith("otro:")
+      ? "Escribe el nombre del otro color (máximo 30 letras)."
+      : "Ese color no está en la lista.";
+  }
 
   const cantidad = Number(datos.get("cantidad"));
   if (!Number.isInteger(cantidad) || cantidad < minimo || cantidad > 9999) {
@@ -27,7 +32,7 @@ function leerFormulario(datos: FormData, minimo: number): Datos | string {
   const ubicacion = normalizarUbicacion(String(datos.get("ubicacion") ?? ""));
   if (ubicacion === false) return "El código solo puede tener letras, números y guiones (ej.: C2-B03).";
 
-  return { pieza, color: colorId || null, cantidad, ubicacion };
+  return { pieza, color: color?.id ?? null, cantidad, ubicacion };
 }
 
 const ERROR_CONEXION = "No se pudo guardar. Revisa la conexión e inténtalo otra vez.";

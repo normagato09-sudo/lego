@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { DibujoPieza } from "@/components/DibujoPieza";
 import { borrarPieza, editarPieza, guardarPieza, type EstadoGuardar } from "@/app/acciones";
-import { COLORES, buscarColor, buscarPieza } from "@/lib/catalogo";
+import { COLORES, LARGO_MAXIMO_OTRO, PREFIJO_OTRO, buscarColor, buscarPieza } from "@/lib/catalogo";
 
 const ELEGIDO = "border-brick bg-brick-soft";
 const NORMAL = "border-line bg-card";
@@ -26,7 +26,12 @@ export function FormularioDetalles({
 }) {
   const pieza = buscarPieza(piezaId)!;
   const minimo = editar ? 0 : 1;
-  const [colorId, setColorId] = useState(editar?.color ?? "");
+  // colorId: "" = sin color, "otro" = escrito a mano, o el código de la paleta.
+  const colorGuardado = editar?.color ?? "";
+  const esOtro = colorGuardado.startsWith(PREFIJO_OTRO);
+  const [colorId, setColorId] = useState(esOtro ? "otro" : colorGuardado);
+  const [otroNombre, setOtroNombre] = useState(esOtro ? colorGuardado.slice(PREFIJO_OTRO.length) : "");
+  const valorColor = colorId === "otro" ? PREFIJO_OTRO + otroNombre.trim() : colorId;
   const [cantidad, setCantidad] = useState(editar?.cantidad ?? 1);
   const [ubicacion, setUbicacion] = useState(editar?.ubicacion ?? "");
   const [estado, accion, guardando] = useActionState<EstadoGuardar, FormData>(
@@ -34,7 +39,7 @@ export function FormularioDetalles({
     {},
   );
 
-  const color = buscarColor(colorId);
+  const color = buscarColor(valorColor);
   const codigo = ubicacion.trim();
   const cambiarHref = editar ? `/anadir?pieza=${pieza.id}&editar=${editar.id}` : `/anadir?pieza=${pieza.id}`;
 
@@ -42,7 +47,7 @@ export function FormularioDetalles({
     <div className="space-y-6 px-4 pt-4 pb-32">
       <form id="formulario-pieza" action={accion} className="space-y-6">
         <input type="hidden" name="pieza" value={pieza.id} />
-        <input type="hidden" name="color" value={colorId} />
+        <input type="hidden" name="color" value={valorColor} />
 
         {/* Resumen de la pieza elegida, pintada en su color */}
         <section className="flex items-center gap-3 rounded-[10px] border border-line bg-card p-3">
@@ -50,7 +55,8 @@ export function FormularioDetalles({
           <div className="min-w-0 flex-1">
             <p className="font-display text-xl font-bold leading-tight">{pieza.nombre}</p>
             <p className="text-sm text-ink/70">
-              {color ? color.nombre : "Sin color"} · <span className="font-mono">{cantidad}</span>{" "}
+              {color ? color.nombre : colorId === "otro" ? "Otro color" : "Sin color"} ·{" "}
+              <span className="font-mono">{cantidad}</span>{" "}
               {cantidad === 1 ? "unidad" : "unidades"}
             </p>
           </div>
@@ -85,7 +91,30 @@ export function FormularioDetalles({
                 }
               />
             ))}
+            <BotonColor
+              nombre="Otro color"
+              activo={colorId === "otro"}
+              onClick={() => setColorId("otro")}
+              bolita={
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-dashed border-ink/40">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </span>
+              }
+            />
           </div>
+          {colorId === "otro" && (
+            <input
+              value={otroNombre}
+              onChange={(e) => setOtroNombre(e.target.value)}
+              maxLength={LARGO_MAXIMO_OTRO}
+              placeholder="Escribe el color, ej.: verde menta"
+              aria-label="Nombre del otro color"
+              autoFocus
+              className="mt-3 h-12 w-full rounded-[10px] border border-line bg-card px-4 text-base outline-none focus:border-brick"
+            />
+          )}
         </section>
 
         <section>

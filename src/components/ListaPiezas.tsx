@@ -71,7 +71,15 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
         (a.ubicacion ?? "").localeCompare(b.ubicacion ?? "", "es", { numeric: true }),
     );
 
-  const coloresUsados = COLORES.filter((c) => filas.some((f) => f.color === c.id));
+  const otrosUsados = [
+    ...new Map(
+      filas
+        .map((f) => buscarColor(f.color))
+        .filter((c) => c?.otro)
+        .map((c) => [c!.id, c!]),
+    ).values(),
+  ];
+  const coloresUsados = [...COLORES.filter((c) => filas.some((f) => f.color === c.id)), ...otrosUsados];
 
   const visibles = todas.filter((f) => {
     if (formaFiltro && f.datos!.forma !== formaFiltro) return false;
@@ -165,7 +173,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 ${colorFiltro === c.id ? "border-brick" : "border-transparent"}`}
             >
               <span
-                className="h-8 w-8 rounded-full border border-ink/20"
+                className={`h-8 w-8 rounded-full border ${c.otro ? "border-2 border-dashed border-ink/40" : "border-ink/20"}`}
                 style={{ backgroundColor: c.hex, opacity: c.transparente ? 0.7 : 1 }}
               />
             </button>

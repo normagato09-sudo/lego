@@ -249,7 +249,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                         >
                           −
                         </button>
-                        <span className="w-9 text-center font-mono text-base">{f.cantidad}</span>
+                        <span className={`w-11 text-center font-mono ${f.cantidad >= 1000 ? "text-sm" : "text-base"}`}>{f.cantidad}</span>
                         <button
                           type="button"
                           onClick={() => cambiar(f.id, f.cantidad, 1)}

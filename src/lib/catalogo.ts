@@ -78,7 +78,7 @@ function medidas(lista: string): [number, number][] {
   });
 }
 
-const x = (a: number, b: number) => `${a} × ${b}`;
+const x = (a: number, b: number) => `${a}\u00A0×\u00A0${b}`; // espacios que no se parten
 
 function planas(
   forma: FormaId,
@@ -181,8 +181,8 @@ export const FORMAS: Forma[] = [
             id: "rampa-rampa-reves-1x2",
             forma: "rampa" as const,
             subtipo: "rampa",
-            medida: "Al revés 1 × 2",
-            nombre: "Rampa al revés 1 × 2",
+            medida: `Al revés ${x(1, 2)}`,
+            nombre: `Rampa al revés ${x(1, 2)}`,
             dibujo: { tipo: "rampa" as const, ancho: 1, largo: 2, reves: true },
           },
         ],

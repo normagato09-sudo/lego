@@ -52,7 +52,10 @@ async function Contenido() {
           <section key={caja.codigo} className="rounded-[10px] border border-line bg-card p-3">
             <div className="flex items-baseline justify-between gap-2">
               <h2 className="font-display text-lg font-bold">
-                {caja.nombre} <span className="font-mono text-sm font-normal text-ink/60">{caja.codigo}</span>
+                {caja.nombre}{" "}
+                {caja.nombre !== caja.codigo && (
+                  <span className="font-mono text-sm font-normal text-ink/60">{caja.codigo}</span>
+                )}
               </h2>
             </div>
             <p className="text-sm text-ink/70">
@@ -69,7 +72,7 @@ async function Contenido() {
                     href={`/?ubicacion=${encodeURIComponent(bolsa.codigo)}`}
                     className="flex min-h-[112px] flex-col items-center gap-1 rounded-[10px] border border-line bg-fog p-2 text-center"
                   >
-                    <span className="font-mono text-sm font-medium">{bolsa.codigo}</span>
+                    <span className="max-w-full font-mono text-sm font-medium break-all">{bolsa.codigo}</span>
                     {pieza && (
                       <DibujoPieza dibujo={pieza.dibujo} color={color?.hex} transparente={color?.transparente} tamano={36} />
                     )}

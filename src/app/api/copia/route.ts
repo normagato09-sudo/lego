@@ -1,9 +1,13 @@
 import { connection } from "next/server";
 import { leerPiezas } from "@/lib/piezas";
+import { haySesion } from "@/lib/sesion";
 
 /** Descarga una copia de todas las piezas en un archivo JSON. */
 export async function GET() {
   await connection();
+  if (!(await haySesion())) {
+    return new Response("Hace falta la contraseña.", { status: 401 });
+  }
   try {
     const filas = await leerPiezas();
     const hoy = new Date().toISOString().slice(0, 10);

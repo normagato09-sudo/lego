@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { buscarColor, buscarPieza, type Pieza } from "@/lib/catalogo";
 import { getSql } from "@/lib/db";
+import { exigirSesion } from "@/lib/sesion";
 import { normalizarUbicacion } from "@/lib/ubicacion";
 
 export type EstadoGuardar = { error?: string };
@@ -36,6 +37,7 @@ const ERROR_CONEXION = "No se pudo guardar. Revisa la conexión e inténtalo otr
  * suma la cantidad en vez de crear otra fila.
  */
 export async function guardarPieza(_antes: EstadoGuardar, formulario: FormData): Promise<EstadoGuardar> {
+  await exigirSesion();
   const d = leerFormulario(formulario, 1);
   if (typeof d === "string") return { error: d };
 
@@ -61,6 +63,7 @@ export async function guardarPieza(_antes: EstadoGuardar, formulario: FormData):
  * (misma pieza + color + ubicación), se juntan las dos sumando la cantidad.
  */
 export async function editarPieza(id: number, _antes: EstadoGuardar, formulario: FormData): Promise<EstadoGuardar> {
+  await exigirSesion();
   const d = leerFormulario(formulario, 0);
   if (typeof d === "string") return { error: d };
 
@@ -100,6 +103,7 @@ export async function editarPieza(id: number, _antes: EstadoGuardar, formulario:
 }
 
 export async function borrarPieza(id: number): Promise<EstadoGuardar> {
+  await exigirSesion();
   try {
     const sql = getSql();
     await sql`delete from piezas where id = ${id}`;
@@ -123,6 +127,7 @@ export type FilaCopia = {
  * las de la copia. Si falla algo, no se cambia nada.
  */
 export async function cargarCopia(filas: FilaCopia[]): Promise<{ error?: string; cargadas?: number }> {
+  await exigirSesion();
   if (!Array.isArray(filas) || filas.length > 5000) {
     return { error: "El archivo no parece una copia de LEGO Inventario." };
   }
@@ -177,6 +182,7 @@ export async function cargarCopia(filas: FilaCopia[]): Promise<{ error?: string;
 
 /** Suma o resta unidades (nunca baja de 0). Devuelve la cantidad nueva o null si falla. */
 export async function cambiarCantidad(id: number, cambio: number): Promise<number | null> {
+  await exigirSesion();
   if (!Number.isInteger(id) || (cambio !== 1 && cambio !== -1)) return null;
   try {
     const sql = getSql();

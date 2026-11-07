@@ -1,5 +1,6 @@
 import "server-only";
 import { getSql } from "@/lib/db";
+import { exigirSesion } from "@/lib/sesion";
 import { ordenarUbicaciones } from "@/lib/ubicacion";
 
 /** Una fila de la tabla piezas. */
@@ -12,6 +13,7 @@ export type FilaPieza = {
 };
 
 export async function leerPiezas(): Promise<FilaPieza[]> {
+  await exigirSesion();
   const sql = getSql();
   return (await sql`
     select id::integer as id, pieza, color, cantidad, ubicacion
@@ -21,6 +23,7 @@ export async function leerPiezas(): Promise<FilaPieza[]> {
 }
 
 export async function leerPieza(id: number): Promise<FilaPieza | undefined> {
+  await exigirSesion();
   const sql = getSql();
   const filas = (await sql`
     select id::integer as id, pieza, color, cantidad, ubicacion
@@ -32,6 +35,7 @@ export async function leerPieza(id: number): Promise<FilaPieza | undefined> {
 
 /** Códigos de ubicación que ya se usan, en orden. Si falla, lista vacía. */
 export async function ubicacionesUsadas(): Promise<string[]> {
+  await exigirSesion();
   try {
     const sql = getSql();
     const filas = (await sql`select distinct ubicacion from piezas where ubicacion is not null`) as {

@@ -1,12 +1,13 @@
+import Link from "next/link";
 import { DibujoPieza } from "@/components/DibujoPieza";
 import { COLORES, FORMAS, buscarPieza } from "@/lib/catalogo";
 
 // Página TEMPORAL (paso 4) para revisar el catálogo y los dibujos.
-// En los pasos 5 y 6 se cambia por la pantalla de Piezas.
+// En el paso 6 se cambia por la pantalla de Piezas.
 export default function Home() {
   const muestra = buscarPieza("fina-rect-2x4")!;
   return (
-    <main className="mx-auto w-full max-w-[390px] px-4 py-6">
+    <main className="mx-auto w-full max-w-[390px] px-4 pt-6 pb-28">
       <h1 className="font-display text-2xl font-bold">Catálogo de piezas</h1>
       <p className="mt-1 text-sm text-ink/70">Vista temporal para revisar los dibujos.</p>
 
@@ -42,6 +43,15 @@ export default function Home() {
           ))}
         </section>
       ))}
+      <Link
+        href="/anadir"
+        className="fixed bottom-5 left-1/2 z-10 flex h-14 -translate-x-1/2 items-center gap-2 rounded-full bg-brick px-6 text-base font-semibold text-white"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Añadir pieza
+      </Link>
     </main>
   );
 }

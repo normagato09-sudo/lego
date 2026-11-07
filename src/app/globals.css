@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #16161a;
+  --fog: #f3f2ef;
+  --card: #ffffff;
+  --line: #dddbd5;
+  --brick: #c91a09;
+  --brick-soft: #fbe9e7;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-fog: var(--fog);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-brick: var(--brick);
+  --color-brick-soft: var(--brick-soft);
+  --font-sans: var(--font-plex-sans);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-plex-mono);
+  --radius-card: 10px;
+}
+
+body {
+  background: var(--fog);
+  color: var(--ink);
+}

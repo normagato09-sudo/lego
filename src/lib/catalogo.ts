@@ -119,7 +119,7 @@ export const FORMAS: Forma[] = [
     explicacion: "Altas, con tetones",
     icono: "alta-rect-2x2",
     subtipos: [
-      { id: "rect", nombre: "Rectangulares", piezas: planas("alta", "rect", "Alta", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,2x2,2x3,2x4,2x6,2x8,2x10", true, "alta") },
+      { id: "rect", nombre: "Rectangulares", piezas: planas("alta", "rect", "Alta", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,1x10,1x12,1x16,2x2,2x3,2x4,2x6,2x8,2x10,2x12", true, "alta") },
       { id: "redonda", nombre: "Redondas", piezas: planas("alta", "redonda", "Alta redonda", "redonda", "1x1,2x2,4x4", true, "alta") },
       { id: "L", nombre: "En L", piezas: planas("alta", "L", "Alta en L", "L", "2x2", true, "alta") },
       {
@@ -142,7 +142,7 @@ export const FORMAS: Forma[] = [
     explicacion: "Finas, con tetones",
     icono: "fina-rect-2x4",
     subtipos: [
-      { id: "rect", nombre: "Rectangulares", piezas: planas("fina", "rect", "Fina", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,2x2,2x3,2x4,2x6,2x8,4x4,4x6,4x8,6x8,8x8", true, "fina") },
+      { id: "rect", nombre: "Rectangulares", piezas: planas("fina", "rect", "Fina", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,1x10,1x12,2x2,2x3,2x4,2x6,2x8,2x10,2x12,4x4,4x6,4x8,4x10,4x12,6x6,6x8,6x10,6x12,8x8", true, "fina") },
       { id: "redonda", nombre: "Redondas", piezas: planas("fina", "redonda", "Fina redonda", "redonda", "1x1,2x2,4x4,6x6", true, "fina") },
       { id: "L", nombre: "En L", piezas: planas("fina", "L", "Fina en L", "L", "2x2,3x3,4x4", true, "fina") },
       { id: "curva", nombre: "Curvas", piezas: planas("fina", "curva", "Fina curva", "cuarto", "2x2,3x3,4x4,6x6", true, "fina") },
@@ -154,7 +154,7 @@ export const FORMAS: Forma[] = [
     explicacion: "Finas, sin tetones",
     icono: "lisa-rect-2x2",
     subtipos: [
-      { id: "rect", nombre: "Rectangulares", piezas: planas("lisa", "rect", "Lisa", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,2x2,2x4,2x6", false, "fina") },
+      { id: "rect", nombre: "Rectangulares", piezas: planas("lisa", "rect", "Lisa", "rect", "1x1,1x2,1x3,1x4,1x6,1x8,1x10,1x12,2x2,2x3,2x4,2x6,2x8", false, "fina") },
       { id: "redonda", nombre: "Redondas", piezas: planas("lisa", "redonda", "Lisa redonda", "redonda", "1x1,2x2", false, "fina") },
       { id: "curva", nombre: "Curvas", piezas: planas("lisa", "curva", "Lisa curva", "cuarto", "1x1,2x2,3x3", false, "fina") },
     ],
@@ -301,7 +301,45 @@ export const PIEZAS: Pieza[] = FORMAS.flatMap((f) => f.subtipos.flatMap((s) => s
 const porId = new Map(PIEZAS.map((p) => [p.id, p]));
 
 export function buscarPieza(id: string): Pieza | undefined {
-  return porId.get(id);
+  return porId.get(id) ?? piezaDeMedidaLibre(id);
+}
+
+// ---------- Piezas rectangulares de medida libre ("+ Otra medida") ----------
+
+const RECTANGULARES = {
+  alta: { prefijo: "Alta", tetones: true, grosor: "alta" },
+  fina: { prefijo: "Fina", tetones: true, grosor: "fina" },
+  lisa: { prefijo: "Lisa", tetones: false, grosor: "fina" },
+} as const;
+
+export type FormaRectangular = keyof typeof RECTANGULARES;
+
+/** Número máximo de tetones de ancho o de largo. */
+export const MEDIDA_MAXIMA = 32;
+
+export function esFormaRectangular(forma: string): forma is FormaRectangular {
+  return forma in RECTANGULARES;
+}
+
+/**
+ * Pieza rectangular de cualquier medida. Usa el mismo código que las del
+ * catálogo (ej. "fina-rect-3x7"), así se guarda y se dibuja igual que las demás.
+ */
+export function piezaRectangular(forma: FormaRectangular, a: number, b: number): Pieza {
+  const ancho = Math.min(a, b);
+  const largo = Math.max(a, b);
+  const r = RECTANGULARES[forma];
+  return planas(forma, "rect", r.prefijo, "rect", `${ancho}x${largo}`, r.tetones, r.grosor)[0];
+}
+
+/** Reconoce códigos como "fina-rect-3x7" que no están en la lista fija. */
+function piezaDeMedidaLibre(id: string): Pieza | undefined {
+  const m = /^(alta|fina|lisa)-rect-([1-9]\d*)x([1-9]\d*)$/.exec(id);
+  if (!m) return undefined;
+  const a = Number(m[2]);
+  const b = Number(m[3]);
+  if (a > b || b > MEDIDA_MAXIMA) return undefined;
+  return piezaRectangular(m[1] as FormaRectangular, a, b);
 }
 
 // ---------- Colores ----------

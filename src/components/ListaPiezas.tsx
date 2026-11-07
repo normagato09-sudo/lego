@@ -31,6 +31,20 @@ const PLURAL: Record<FormaId, string> = {
 /** Posición de cada pieza en el catálogo, para ordenar la lista igual. */
 const ORDEN = new Map(PIEZAS.map((p, i) => [p.id, i]));
 
+/** Las de medida libre van detrás de las de su mismo tipo, de menor a mayor. */
+function orden(id: string): number {
+  const conocida = ORDEN.get(id);
+  if (conocida !== undefined) return conocida;
+  const p = buscarPieza(id);
+  if (!p) return Number.MAX_SAFE_INTEGER;
+  let ultima = 0;
+  PIEZAS.forEach((x, i) => {
+    if (x.forma === p.forma && x.subtipo === p.subtipo) ultima = i;
+  });
+  const tamano = p.dibujo.tipo === "arriba" ? p.dibujo.ancho * 100 + p.dibujo.largo : 0;
+  return ultima + 0.5 + tamano / 1e6;
+}
+
 export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; ubicacionInicial?: string }) {
   const [busqueda, setBusqueda] = useState("");
   const [formaFiltro, setFormaFiltro] = useState<FormaId>();
@@ -52,7 +66,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
     .filter((f) => f.datos !== undefined)
     .sort(
       (a, b) =>
-        ORDEN.get(a.pieza)! - ORDEN.get(b.pieza)! ||
+        orden(a.pieza) - orden(b.pieza) ||
         (a.color ?? "").localeCompare(b.color ?? "") ||
         (a.ubicacion ?? "").localeCompare(b.ubicacion ?? "", "es", { numeric: true }),
     );

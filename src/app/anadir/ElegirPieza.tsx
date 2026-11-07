@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import { DibujoPieza } from "@/components/DibujoPieza";
-import { FORMAS, PIEZAS, buscarPieza, type FormaId, type Pieza } from "@/lib/catalogo";
+import {
+  FORMAS,
+  MEDIDA_MAXIMA,
+  PIEZAS,
+  buscarPieza,
+  esFormaRectangular,
+  piezaRectangular,
+  type FormaId,
+  type FormaRectangular,
+  type Pieza,
+} from "@/lib/catalogo";
 import { coincide } from "@/lib/texto";
 
 const ELEGIDO = "border-brick bg-brick-soft";
@@ -15,6 +25,10 @@ export function ElegirPieza({ piezaInicial, editarId }: { piezaInicial?: string;
   const [formaId, setFormaId] = useState<FormaId | undefined>(inicial?.forma);
   const [subtipoId, setSubtipoId] = useState<string | undefined>(inicial?.subtipo);
   const [elegida, setElegida] = useState<Pieza | undefined>(inicial);
+  // Panel "+ Otra medida" abierto. Se abre solo si la pieza que llega no está en la lista.
+  const [otraMedida, setOtraMedida] = useState(
+    !!inicial && inicial.subtipo === "rect" && esFormaRectangular(inicial.forma) && !PIEZAS.some((p) => p.id === inicial.id),
+  );
 
   const forma = FORMAS.find((f) => f.id === formaId);
   const subtipo = forma?.subtipos.find((s) => s.id === subtipoId);
@@ -29,9 +43,20 @@ export function ElegirPieza({ piezaInicial, editarId }: { piezaInicial?: string;
 
   function elegirForma(id: FormaId) {
     setFormaId(id);
+    setOtraMedida(false);
     const f = FORMAS.find((x) => x.id === id)!;
     // Si solo hay un tipo, se elige solo.
     setSubtipoId(f.subtipos.length === 1 ? f.subtipos[0].id : undefined);
+  }
+
+  function abrirOtraMedida() {
+    if (!forma || !esFormaRectangular(forma.id)) return;
+    const f = forma.id;
+    // Empieza con la medida que ya estaba elegida (si es de esta forma) o con 1 × 1.
+    setElegida((actual) =>
+      actual && actual.forma === f && actual.subtipo === "rect" ? actual : piezaRectangular(f, 1, 1),
+    );
+    setOtraMedida(true);
   }
 
   return (
@@ -89,7 +114,10 @@ export function ElegirPieza({ piezaInicial, editarId }: { piezaInicial?: string;
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setSubtipoId(s.id)}
+                      onClick={() => {
+                        setSubtipoId(s.id);
+                        setOtraMedida(false);
+                      }}
                       aria-pressed={s.id === subtipoId}
                       className={`h-11 rounded-full border px-4 text-sm font-medium ${s.id === subtipoId ? ELEGIDO : NORMAL}`}
                     >
@@ -103,7 +131,22 @@ export function ElegirPieza({ piezaInicial, editarId }: { piezaInicial?: string;
             {subtipo && (
               <section>
                 <h2 className="font-display text-lg font-bold">3. Toca la pieza exacta</h2>
-                <CuadriculaPiezas piezas={subtipo.piezas} elegida={elegida} onElegir={setElegida} />
+                <CuadriculaPiezas
+                  piezas={subtipo.piezas}
+                  elegida={otraMedida ? undefined : elegida}
+                  onElegir={(p) => {
+                    setElegida(p);
+                    setOtraMedida(false);
+                  }}
+                  otraMedida={
+                    subtipo.id === "rect" && forma && esFormaRectangular(forma.id)
+                      ? { activa: otraMedida, onClick: abrirOtraMedida }
+                      : undefined
+                  }
+                />
+                {otraMedida && forma && esFormaRectangular(forma.id) && elegida && (
+                  <PanelOtraMedida key={forma.id} forma={forma.id} inicial={elegida} onCambio={setElegida} />
+                )}
               </section>
             )}
           </>
@@ -144,11 +187,14 @@ function CuadriculaPiezas({
   elegida,
   onElegir,
   conNombre = false,
+  otraMedida,
 }: {
   piezas: Pieza[];
   elegida?: Pieza;
   onElegir: (p: Pieza) => void;
   conNombre?: boolean;
+  /** Si llega, se añade al final el botón "+ Otra medida". */
+  otraMedida?: { activa: boolean; onClick: () => void };
 }) {
   return (
     <div className="mt-3 grid grid-cols-4 gap-2">
@@ -169,6 +215,80 @@ function CuadriculaPiezas({
           </button>
         );
       })}
+      {otraMedida && (
+        <button
+          type="button"
+          onClick={otraMedida.onClick}
+          aria-pressed={otraMedida.activa}
+          className={`flex min-h-[88px] flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed p-1 ${otraMedida.activa ? "border-brick bg-brick-soft" : "border-ink/30 bg-card"}`}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span className="text-center font-display text-xs font-semibold leading-tight">Otra medida</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Elegir una medida que no está en la lista: ancho × largo en tetones. */
+function PanelOtraMedida({
+  forma,
+  inicial,
+  onCambio,
+}: {
+  forma: FormaRectangular;
+  inicial: Pieza;
+  onCambio: (p: Pieza) => void;
+}) {
+  const [ancho, setAncho] = useState(inicial.dibujo.tipo === "arriba" ? inicial.dibujo.ancho : 1);
+  const [largo, setLargo] = useState(inicial.dibujo.tipo === "arriba" ? inicial.dibujo.largo : 1);
+  const pieza = piezaRectangular(forma, ancho, largo);
+
+  function cambiar(nuevoAncho: number, nuevoLargo: number) {
+    const a = Math.max(1, Math.min(MEDIDA_MAXIMA, nuevoAncho));
+    const l = Math.max(1, Math.min(MEDIDA_MAXIMA, nuevoLargo));
+    setAncho(a);
+    setLargo(l);
+    onCambio(piezaRectangular(forma, a, l));
+  }
+
+  return (
+    <div className="mt-3 space-y-3 rounded-[10px] border border-brick bg-card p-3">
+      <div className="flex items-center gap-3">
+        <DibujoPieza dibujo={pieza.dibujo} tamano={72} />
+        <p className="font-display text-xl font-bold leading-tight">{pieza.nombre}</p>
+      </div>
+      <Contador texto="Ancho (tetones)" valor={ancho} onCambio={(n) => cambiar(n, largo)} />
+      <Contador texto="Largo (tetones)" valor={largo} onCambio={(n) => cambiar(ancho, n)} />
+    </div>
+  );
+}
+
+function Contador({ texto, valor, onCambio }: { texto: string; valor: number; onCambio: (n: number) => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex-1 text-sm font-medium">{texto}</span>
+      <button
+        type="button"
+        onClick={() => onCambio(valor - 1)}
+        disabled={valor <= 1}
+        aria-label={`${texto}: uno menos`}
+        className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-line bg-card text-xl disabled:opacity-30"
+      >
+        −
+      </button>
+      <span className="w-8 text-center font-mono text-lg">{valor}</span>
+      <button
+        type="button"
+        onClick={() => onCambio(valor + 1)}
+        disabled={valor >= MEDIDA_MAXIMA}
+        aria-label={`${texto}: uno más`}
+        className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-line bg-card text-xl disabled:opacity-30"
+      >
+        +
+      </button>
     </div>
   );
 }

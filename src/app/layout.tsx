@@ -22,12 +22,22 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "LEGO Inventario",
   description: "Organiza tu colección de piezas LEGO por forma, caja y bolsa.",
+  applicationName: "LEGO Inventario",
+  // Para iPhone: abrir a pantalla completa con su nombre e icono.
+  appleWebApp: {
+    capable: true,
+    title: "LEGO",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: [{ url: "/iconos/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f3f2ef",
+  themeColor: "#16161a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

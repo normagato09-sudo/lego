@@ -1,3 +1,18 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
+import { getSql } from "@/lib/db";
+
+async function DbStatus() {
+  await connection();
+  try {
+    const sql = getSql();
+    await sql`select 1`;
+    return <p className="font-mono text-sm text-ink">Base de datos: conectada</p>;
+  } catch {
+    return <p className="font-mono text-sm text-brick">Base de datos: sin conexión</p>;
+  }
+}
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[390px] flex-col items-center justify-center gap-4 px-4">
@@ -7,9 +22,9 @@ export default function Home() {
         <rect x="2" y="9" width="60" height="33" rx="4" fill="#c91a09" />
       </svg>
       <h1 className="font-display text-3xl font-bold">LEGO Inventario</h1>
-      <p className="text-center text-ink/70">
-        Paso 1 listo: la app ya está en marcha.
-      </p>
+      <Suspense fallback={<p className="font-mono text-sm text-ink/60">Comprobando base de datos…</p>}>
+        <DbStatus />
+      </Suspense>
     </main>
   );
 }

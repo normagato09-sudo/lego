@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CabeceraVolver } from "@/components/Cabecera";
 import { FormularioDetalles } from "@/components/FormularioDetalles";
 import { buscarPieza } from "@/lib/catalogo";
-import { leerPieza, ubicacionesUsadas } from "@/lib/piezas";
+import { coloresUsados, leerPieza, ubicacionesUsadas } from "@/lib/piezas";
 
 export const metadata = { title: "Editar pieza · LEGO Inventario" };
 
@@ -13,7 +13,11 @@ async function Contenido({ params, searchParams }: PageProps<"/pieza/[id]">) {
   if (!/^\d+$/.test(texto)) notFound();
   const id = Number(texto);
 
-  const [fila, ubicaciones] = await Promise.all([leerPieza(id), ubicacionesUsadas()]);
+  const [fila, ubicaciones, misColores] = await Promise.all([
+    leerPieza(id),
+    ubicacionesUsadas(),
+    coloresUsados(),
+  ]);
   if (!fila) notFound();
 
   // Si se ha pulsado "Cambiar" y elegido otra pieza, llega en la dirección.
@@ -26,6 +30,7 @@ async function Contenido({ params, searchParams }: PageProps<"/pieza/[id]">) {
       <FormularioDetalles
         piezaId={piezaId}
         ubicaciones={ubicaciones}
+        misColores={misColores}
         editar={{ id: fila.id, color: fila.color, cantidad: fila.cantidad, ubicacion: fila.ubicacion }}
       />
     </>

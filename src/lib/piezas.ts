@@ -47,3 +47,16 @@ export async function ubicacionesUsadas(): Promise<string[]> {
     return [];
   }
 }
+
+/** Colores que ya se han usado alguna vez (para la fila "Mis colores"). Si falla, lista vacía. */
+export async function coloresUsados(): Promise<string[]> {
+  await exigirSesion();
+  try {
+    const sql = getSql();
+    const filas = (await sql`select distinct color from piezas where color is not null`) as { color: string }[];
+    return filas.map((f) => f.color);
+  } catch (e) {
+    console.error("No se pudieron leer los colores usados", e);
+    return [];
+  }
+}

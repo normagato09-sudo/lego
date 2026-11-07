@@ -353,9 +353,12 @@ export type Color = {
   otro?: boolean;
 };
 
+// Colores que LEGO fabrica actualmente (sólidos, transparentes y metálicos),
+// con los valores de color de Rebrickable / BrickLink.
 // Ordenados por familias: blancos y grises, rojos y rosas, naranjas y marrones,
 // amarillos, verdes, azules, morados, transparentes y metálicos.
-// Los códigos (id) de los colores que ya existían no cambian.
+// Los códigos (id) de los colores que ya existían NO cambian: así las piezas
+// guardadas siguen teniendo su color.
 export const COLORES: Color[] = [
   // Blancos y grises
   { id: "blanco", nombre: "Blanco", hex: "#F4F4F4" },
@@ -372,40 +375,65 @@ export const COLORES: Color[] = [
   // Naranjas y marrones
   { id: "naranja-claro", nombre: "Naranja claro", hex: "#F8BB3D" },
   { id: "naranja", nombre: "Naranja", hex: "#FE8A18" },
+  { id: "naranja-rojizo", nombre: "Naranja rojizo", hex: "#CA4C0B" },
   { id: "naranja-oscuro", nombre: "Naranja oscuro", hex: "#A95500" },
+  { id: "piel-clara", nombre: "Piel clara", hex: "#F6D7B3" },
   { id: "beige", nombre: "Beige", hex: "#E4CD9E" },
+  { id: "beige-calido", nombre: "Beige cálido", hex: "#CCA373" },
   { id: "beige-oscuro", nombre: "Beige oscuro", hex: "#958A73" },
   { id: "caramelo", nombre: "Caramelo", hex: "#D09168" },
   { id: "marron-claro", nombre: "Marrón claro", hex: "#AA7D55" },
+  { id: "marron-medio", nombre: "Marrón medio", hex: "#755945" },
   { id: "marron", nombre: "Marrón", hex: "#582A12" },
   { id: "marron-oscuro", nombre: "Marrón oscuro", hex: "#352100" },
   // Amarillos
   { id: "amarillo-claro", nombre: "Amarillo claro", hex: "#FFF03A" },
+  { id: "amarillo-vibrante", nombre: "Amarillo vibrante", hex: "#EBD800" },
   { id: "amarillo", nombre: "Amarillo", hex: "#F2CD37" },
   // Verdes
+  { id: "verde-amarillento", nombre: "Verde amarillento", hex: "#DFEEA5" },
   { id: "verde-lima", nombre: "Verde lima", hex: "#BBE90B" },
+  { id: "verde-brillante", nombre: "Verde brillante", hex: "#4B9F4A" },
   { id: "verde", nombre: "Verde", hex: "#237841" },
   { id: "verde-oscuro", nombre: "Verde oscuro", hex: "#184632" },
   { id: "verde-oliva", nombre: "Verde oliva", hex: "#9B9A5A" },
   { id: "verde-arena", nombre: "Verde arena", hex: "#A0BCAC" },
   // Azules
+  { id: "aguamarina-claro", nombre: "Aguamarina claro", hex: "#ADC3C0" },
   { id: "azul-claro", nombre: "Azul claro", hex: "#9FC3E9" },
+  { id: "azul-medio", nombre: "Azul medio", hex: "#5A93DB" },
   { id: "azul-celeste", nombre: "Azul celeste", hex: "#36AEBF" },
+  { id: "celeste-oscuro", nombre: "Celeste oscuro", hex: "#078BC9" },
+  { id: "turquesa-oscuro", nombre: "Turquesa oscuro", hex: "#008F9B" },
   { id: "azul", nombre: "Azul", hex: "#0055BF" },
   { id: "azul-arena", nombre: "Azul arena", hex: "#6074A1" },
   { id: "azul-oscuro", nombre: "Azul oscuro", hex: "#0A3463" },
   // Morados
   { id: "lila-claro", nombre: "Lila claro", hex: "#E1D5ED" },
   { id: "lila", nombre: "Lila", hex: "#AC78BA" },
+  { id: "morado-oscuro", nombre: "Morado oscuro", hex: "#3F3691" },
   // Transparentes
   { id: "transparente", nombre: "Transparente", hex: "#DDEEF5", transparente: true },
+  { id: "transparente-negro", nombre: "Transparente negro (ahumado)", hex: "#635F52", transparente: true },
   { id: "transparente-rojo", nombre: "Transparente rojo", hex: "#C91A09", transparente: true },
-  { id: "transparente-azul", nombre: "Transparente azul", hex: "#0055BF", transparente: true },
+  { id: "transparente-rosa", nombre: "Transparente rosa", hex: "#DF6695", transparente: true },
+  { id: "transparente-naranja", nombre: "Transparente naranja", hex: "#F08F1C", transparente: true },
+  { id: "transparente-naranja-neon", nombre: "Transparente naranja neón", hex: "#FF800D", transparente: true },
   { id: "transparente-amarillo", nombre: "Transparente amarillo", hex: "#F5CD2F", transparente: true },
+  { id: "transparente-verde-neon", nombre: "Transparente verde neón", hex: "#F8F184", transparente: true },
+  { id: "transparente-verde-lima", nombre: "Transparente verde lima", hex: "#D9E4A7", transparente: true },
   { id: "transparente-verde", nombre: "Transparente verde", hex: "#84B68D", transparente: true },
+  { id: "transparente-azul-claro", nombre: "Transparente azul claro", hex: "#AEEFEC", transparente: true },
+  { id: "transparente-azul", nombre: "Transparente azul", hex: "#0055BF", transparente: true },
+  { id: "transparente-morado", nombre: "Transparente morado", hex: "#A5A5CB", transparente: true },
   // Metálicos
   { id: "plateado", nombre: "Plateado", hex: "#898788" },
+  { id: "plateado-brillante", nombre: "Plateado brillante", hex: "#A5A9B4" },
+  { id: "plateado-cromado", nombre: "Plateado cromado", hex: "#E0E0E0" },
+  { id: "gris-perla", nombre: "Gris oscuro perlado", hex: "#575857" },
   { id: "dorado", nombre: "Dorado", hex: "#DBAC34" },
+  { id: "dorado-perla", nombre: "Dorado perlado", hex: "#AA7F2E" },
+  { id: "dorado-cromado", nombre: "Dorado cromado", hex: "#BBA53D" },
 ];
 
 const colorPorId = new Map(COLORES.map((c) => [c.id, c]));

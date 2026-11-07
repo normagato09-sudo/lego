@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { CabeceraVolver } from "@/components/Cabecera";
 import { FormularioDetalles } from "@/components/FormularioDetalles";
 import { buscarPieza } from "@/lib/catalogo";
-import { ubicacionesUsadas } from "@/lib/piezas";
+import { coloresUsados, ubicacionesUsadas } from "@/lib/piezas";
 
 export const metadata = { title: "Color, cantidad y caja · LEGO Inventario" };
 
@@ -11,11 +11,11 @@ async function Contenido({ searchParams }: { searchParams: PageProps<"/anadir/de
   const { pieza: id } = await searchParams;
   const pieza = typeof id === "string" ? buscarPieza(id) : undefined;
   if (!pieza) redirect("/anadir");
-  const ubicaciones = await ubicacionesUsadas();
+  const [ubicaciones, misColores] = await Promise.all([ubicacionesUsadas(), coloresUsados()]);
   return (
     <>
       <CabeceraVolver titulo="Color, cantidad y caja" volverA={`/anadir?pieza=${pieza.id}`} />
-      <FormularioDetalles piezaId={pieza.id} ubicaciones={ubicaciones} />
+      <FormularioDetalles piezaId={pieza.id} ubicaciones={ubicaciones} misColores={misColores} />
     </>
   );
 }

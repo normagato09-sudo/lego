@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useActionState, useState, useTransition, type ReactNode } from "react";
 import { DibujoPieza } from "@/components/DibujoPieza";
 import { borrarPieza, editarPieza, guardarPieza, type EstadoGuardar } from "@/app/acciones";
-import { COLORES, LARGO_MAXIMO_OTRO, PREFIJO_OTRO, buscarColor, buscarPieza } from "@/lib/catalogo";
+import {
+  COLORES,
+  LARGO_MAXIMO_OTRO,
+  PREFIJO_OTRO,
+  buscarColor,
+  buscarPieza,
+  type Color,
+} from "@/lib/catalogo";
 
 const ELEGIDO = "border-brick bg-brick-soft";
 const NORMAL = "border-line bg-card";
@@ -18,10 +25,13 @@ type Editar = { id: number; color: string | null; cantidad: number; ubicacion: s
 export function FormularioDetalles({
   piezaId,
   ubicaciones,
+  misColores = [],
   editar,
 }: {
   piezaId: string;
   ubicaciones: string[];
+  /** Colores ya usados alguna vez (códigos guardados), para la fila "Mis colores". */
+  misColores?: string[];
   editar?: Editar;
 }) {
   const pieza = buscarPieza(piezaId)!;
@@ -40,6 +50,25 @@ export function FormularioDetalles({
   );
 
   const color = buscarColor(valorColor);
+
+  // "Mis colores": primero los de la paleta (en su orden) y luego los escritos a mano.
+  const usados = new Set(misColores);
+  const misColoresLista: Color[] = [
+    ...COLORES.filter((c) => usados.has(c.id)),
+    ...misColores
+      .map((id) => buscarColor(id))
+      .filter((c): c is Color => !!c?.otro)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+  ];
+
+  function elegirColor(c: Color) {
+    if (c.otro) {
+      setColorId("otro");
+      setOtroNombre(c.nombre);
+    } else {
+      setColorId(c.id);
+    }
+  }
   const codigo = ubicacion.trim();
   const cambiarHref = editar ? `/anadir?pieza=${pieza.id}&editar=${editar.id}` : `/anadir?pieza=${pieza.id}`;
 
@@ -70,6 +99,28 @@ export function FormularioDetalles({
 
         <section>
           <h2 className="font-display text-lg font-bold">¿De qué color es?</h2>
+          {misColoresLista.length > 0 && (
+            <>
+              <h3 className="mt-3 text-sm font-semibold text-ink/70">Mis colores</h3>
+              <div className="mt-2 grid grid-cols-5 gap-2">
+                {misColoresLista.map((c) => (
+                  <BotonColor
+                    key={`mio-${c.id}`}
+                    nombre={c.nombre}
+                    activo={c.id === color?.id}
+                    onClick={() => elegirColor(c)}
+                    bolita={
+                      <span
+                        className={`h-8 w-8 rounded-full ${c.otro ? "border-2 border-dashed border-ink/40" : "border border-ink/20"}`}
+                        style={{ backgroundColor: c.hex, opacity: c.transparente ? 0.7 : 1 }}
+                      />
+                    }
+                  />
+                ))}
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-ink/70">Todos los colores</h3>
+            </>
+          )}
           <div className="mt-3 grid grid-cols-5 gap-2">
             <BotonColor
               nombre="Sin color"

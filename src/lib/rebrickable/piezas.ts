@@ -6,6 +6,7 @@ import type { DatosRb } from "@/lib/vista";
 export const POR_PAGINA = 60;
 
 
+
 /**
  * Busca piezas del catálogo de Rebrickable.
  * - categorias: solo esas categorías (vacío = todas)

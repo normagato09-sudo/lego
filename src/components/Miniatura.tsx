@@ -11,10 +11,13 @@ function fotoEnColor(partNum: string, colorRb: number): string {
   return `https://cdn.rebrickable.com/media/parts/ldraw/${colorRb}/${encodeURIComponent(partNum)}.png`;
 }
 
-/** La pieza repintada en tu color por la propia app (cuando Rebrickable no la tiene así). */
-function fotoPintada(partNum: string, color: Color): string {
+/**
+ * Cuando Rebrickable no tiene el dibujo en ese color: la app busca su foto real en
+ * ese color o, si no hay, la repinta en tu color.
+ */
+function fotoPintada(partNum: string, color: Color, colorRb: number): string {
   const hex = color.hex.replace("#", "");
-  return `/api/imagen-color?pieza=${encodeURIComponent(partNum)}&hex=${hex}&trans=${color.transparente ? 1 : 0}`;
+  return `/api/imagen-color?pieza=${encodeURIComponent(partNum)}&color=${colorRb}&hex=${hex}&trans=${color.transparente ? 1 : 0}`;
 }
 
 /**
@@ -31,7 +34,7 @@ export function Miniatura({ vista, color, tamano = 52 }: { vista: PiezaVista; co
   const colorRb = color && !color.otro ? COLOR_A_RB[color.id] : undefined;
   const intentos = [
     vista.partNum && colorRb !== undefined ? fotoEnColor(vista.partNum, colorRb) : null,
-    vista.partNum && color && !color.otro ? fotoPintada(vista.partNum, color) : null,
+    vista.partNum && color && colorRb !== undefined ? fotoPintada(vista.partNum, color, colorRb) : null,
   ].filter((s): s is string => !!s);
   const src = intentos.find((s) => !fallos[s]);
 

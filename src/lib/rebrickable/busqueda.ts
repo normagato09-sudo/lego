@@ -1,0 +1,130 @@
+import { normalizar } from "@/lib/texto";
+
+// Palabras en inglés de los nombres de Rebrickable → palabras en español para el buscador.
+// Así se puede buscar "redonda", "bisagra" o "rueda" aunque el nombre esté en inglés.
+const PALABRAS: Record<string, string> = {
+  brick: "alta ladrillo",
+  plate: "fina placa",
+  tile: "lisa",
+  slope: "rampa inclinada",
+  curved: "curva",
+  round: "redonda redondo",
+  wedge: "cuña diagonal",
+  inverted: "al reves invertida",
+  corner: "esquina",
+  arch: "arco",
+  cone: "cono",
+  dish: "plato",
+  clip: "clip pinza",
+  bar: "barra",
+  handle: "asa",
+  hinge: "bisagra",
+  hole: "agujero",
+  holes: "agujeros",
+  axle: "eje",
+  pin: "pin",
+  beam: "viga",
+  liftarm: "viga",
+  gear: "engranaje",
+  bush: "tope casquillo",
+  connector: "conector",
+  wheel: "rueda",
+  tyre: "neumatico rueda",
+  tire: "neumatico rueda",
+  door: "puerta",
+  window: "ventana",
+  glass: "cristal",
+  windscreen: "parabrisas",
+  fence: "valla",
+  ladder: "escalera",
+  panel: "panel pared",
+  wall: "pared",
+  stud: "teton",
+  studs: "tetones",
+  jumper: "jumper teton centrado",
+  grille: "rejilla",
+  bracket: "escuadra soporte",
+  modified: "especial",
+  side: "lado lateral",
+  log: "tronco",
+  cylinder: "cilindro",
+  dome: "cupula",
+  hemisphere: "semiesfera",
+  flower: "flor",
+  leaf: "hoja",
+  leaves: "hojas",
+  plant: "planta",
+  tree: "arbol",
+  rock: "roca",
+  head: "cabeza",
+  torso: "cuerpo torso",
+  legs: "piernas",
+  hair: "pelo",
+  helmet: "casco",
+  hat: "sombrero gorro",
+  cap: "gorra",
+  cape: "capa",
+  sword: "espada",
+  shield: "escudo",
+  weapon: "arma",
+  tool: "herramienta",
+  cup: "taza",
+  animal: "animal",
+  horse: "caballo",
+  dog: "perro",
+  cat: "gato",
+  bird: "pajaro",
+  fish: "pez",
+  flame: "llama fuego",
+  flag: "bandera",
+  sign: "señal cartel",
+  chain: "cadena",
+  string: "cuerda",
+  hose: "manguera",
+  tube: "tubo",
+  magnet: "iman",
+  light: "luz",
+  motor: "motor",
+  turntable: "giratorio",
+  steering: "direccion",
+  container: "contenedor caja",
+  box: "caja",
+  chest: "cofre",
+  bucket: "cubo",
+  antenna: "antena",
+  lever: "palanca",
+  boat: "barco",
+  hull: "casco barco",
+  train: "tren",
+  propeller: "helice",
+  baseplate: "base",
+  octagonal: "octogonal",
+  triangular: "triangular",
+  angled: "en angulo",
+  double: "doble",
+  half: "medio",
+  thick: "gruesa",
+  thin: "fina delgada",
+  smooth: "lisa",
+  pattern: "dibujo",
+  print: "impresa",
+  // "Technic" se deja tal cual (sirve para buscar piezas con agujeros).
+};
+
+/** Medida sacada del nombre: "Plate 2 x 8" → "2 × 8". */
+export function sacarMedida(nombre: string): string | null {
+  const m = /(\d+(?:\/\d+)?)\s*x\s*(\d+(?:\/\d+)?)(?:\s*x\s*(\d+(?:\/\d+)?))?/i.exec(nombre);
+  if (!m) return null;
+  return [m[1], m[2], m[3]].filter(Boolean).join(" × ");
+}
+
+/** Texto para el buscador: nombre, medida, categoría y palabras en español. */
+export function textoBusqueda(partNum: string, nombre: string, categoria: string): string {
+  const espanol = nombre
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .map((p) => PALABRAS[p])
+    .filter(Boolean)
+    .join(" ");
+  return normalizar(`${partNum} ${nombre} ${categoria} ${espanol}`);
+}

@@ -15,7 +15,7 @@ export async function GET() {
       app: "LEGO Inventario",
       version: 1,
       fecha: new Date().toISOString(),
-      piezas: filas.map(({ pieza, color, cantidad, ubicacion }) => ({ pieza, color, cantidad, ubicacion })),
+      piezas: filas.map(({ pieza, color, cantidad, ubicacion, part_num }) => ({ pieza, color, cantidad, ubicacion, part_num })),
     };
     return new Response(JSON.stringify(copia, null, 2), {
       headers: {

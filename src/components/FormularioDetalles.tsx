@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useActionState, useState, useTransition, type ReactNode } from "react";
-import { DibujoPieza } from "@/components/DibujoPieza";
+import { Miniatura } from "@/components/Miniatura";
+import type { PiezaVista } from "@/lib/vista";
 import { borrarPieza, editarPieza, guardarPieza, type EstadoGuardar } from "@/app/acciones";
 import {
   COLORES,
   LARGO_MAXIMO_OTRO,
   PREFIJO_OTRO,
   buscarColor,
-  buscarPieza,
   type Color,
 } from "@/lib/catalogo";
 
@@ -23,18 +23,18 @@ type Editar = { id: number; color: string | null; cantidad: number; ubicacion: s
  * o, si llega `editar`, para cambiar o borrar una ya guardada.
  */
 export function FormularioDetalles({
-  piezaId,
+  pieza,
   ubicaciones,
   misColores = [],
   editar,
 }: {
-  piezaId: string;
+  /** La pieza elegida (con foto de Rebrickable o con dibujo del catálogo antiguo). */
+  pieza: PiezaVista;
   ubicaciones: string[];
   /** Colores ya usados alguna vez (códigos guardados), para la fila "Mis colores". */
   misColores?: string[];
   editar?: Editar;
 }) {
-  const pieza = buscarPieza(piezaId)!;
   const minimo = editar ? 0 : 1;
   // colorId: "" = sin color, "otro" = escrito a mano, o el código de la paleta.
   const colorGuardado = editar?.color ?? "";
@@ -70,19 +70,25 @@ export function FormularioDetalles({
     }
   }
   const codigo = ubicacion.trim();
-  const cambiarHref = editar ? `/anadir?pieza=${pieza.id}&editar=${editar.id}` : `/anadir?pieza=${pieza.id}`;
+  const parametros = new URLSearchParams();
+  if (pieza.partNum) parametros.set("rb", pieza.partNum);
+  if (editar) parametros.set("editar", String(editar.id));
+  const cambiarHref = `/anadir${parametros.size ? `?${parametros}` : ""}`;
 
   return (
     <div className="space-y-6 px-4 pt-4 pb-32">
       <form id="formulario-pieza" action={accion} className="space-y-6">
-        <input type="hidden" name="pieza" value={pieza.id} />
+        <input type="hidden" name="pieza" value={pieza.clave} />
         <input type="hidden" name="color" value={valorColor} />
 
         {/* Resumen de la pieza elegida, pintada en su color */}
         <section className="flex items-center gap-3 rounded-[10px] border border-line bg-card p-3">
-          <DibujoPieza dibujo={pieza.dibujo} color={color?.hex} transparente={color?.transparente} tamano={72} />
+          <Miniatura vista={pieza} color={color} tamano={72} />
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xl font-bold leading-tight">{pieza.nombre}</p>
+            <p className="font-display text-xl font-bold leading-tight">
+              {pieza.partNum ? (pieza.medida ?? pieza.categoria) : pieza.nombre}
+            </p>
+            {pieza.partNum && <p className="line-clamp-2 text-xs leading-tight text-ink/60">{pieza.nombre}</p>}
             <p className="text-sm text-ink/70">
               {color ? color.nombre : colorId === "otro" ? "Otro color" : "Sin color"} ·{" "}
               <span className="font-mono">{cantidad}</span>{" "}

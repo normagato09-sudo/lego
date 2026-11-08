@@ -3,9 +3,10 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { CabeceraApp } from "@/components/CabeceraApp";
 import { CopiaSeguridad } from "@/components/CopiaSeguridad";
-import { DibujoPieza } from "@/components/DibujoPieza";
+import { Miniatura } from "@/components/Miniatura";
 import { agruparPorCajas } from "@/lib/cajas";
-import { buscarColor, buscarPieza } from "@/lib/catalogo";
+import { buscarColor } from "@/lib/catalogo";
+import { vistaDeFila } from "@/lib/vista";
 import { leerPiezas, type FilaPieza } from "@/lib/piezas";
 
 export const metadata = { title: "Cajas · LEGO Inventario" };
@@ -64,7 +65,7 @@ async function Contenido() {
             </p>
             <div className="mt-3 grid grid-cols-3 gap-2">
               {caja.bolsas.map((bolsa) => {
-                const pieza = buscarPieza(bolsa.principal.pieza);
+                const pieza = vistaDeFila(bolsa.principal);
                 const color = buscarColor(bolsa.principal.color);
                 return (
                   <Link
@@ -73,11 +74,9 @@ async function Contenido() {
                     className="flex min-h-[112px] flex-col items-center gap-1 rounded-[10px] border border-line bg-fog p-2 text-center"
                   >
                     <span className="max-w-full font-mono text-sm font-medium break-all">{bolsa.codigo}</span>
-                    {pieza && (
-                      <DibujoPieza dibujo={pieza.dibujo} color={color?.hex} transparente={color?.transparente} tamano={36} />
-                    )}
+                    {pieza && <Miniatura vista={pieza} color={color} tamano={40} />}
                     <span className="line-clamp-2 text-xs leading-tight">
-                      {pieza?.nombre ?? "Pieza"}
+                      {pieza ? (pieza.partNum ? `${pieza.medida ?? ""} ${pieza.categoria ?? ""}`.trim() : pieza.nombre) : "Pieza"}
                       {bolsa.tipos > 1 && <span className="text-ink/60"> y {bolsa.tipos - 1} más</span>}
                     </span>
                     <span className="font-mono text-xs text-ink/70">{plural(bolsa.piezas, "pieza", "piezas")}</span>

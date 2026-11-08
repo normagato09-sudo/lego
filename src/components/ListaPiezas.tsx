@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { cambiarCantidad } from "@/app/acciones";
 import { DibujoPieza } from "@/components/DibujoPieza";
+import { Miniatura } from "@/components/Miniatura";
 import { COLORES, FORMAS, PIEZAS, buscarColor, buscarPieza, type FormaId } from "@/lib/catalogo";
+import { textoBusqueda } from "@/lib/rebrickable/busqueda";
 import { coincide } from "@/lib/texto";
+import { vistaDeFila, type DatosRb, type PiezaVista } from "@/lib/vista";
 
 export type FilaLista = {
   id: number;
@@ -13,6 +16,8 @@ export type FilaLista = {
   color: string | null;
   cantidad: number;
   ubicacion: string | null;
+  /** Datos de Rebrickable (foto, nombre, categoría) si está enlazada. */
+  rb: DatosRb | null;
 };
 
 const ELEGIDO = "border-brick bg-brick-soft";
@@ -45,6 +50,13 @@ function orden(id: string): number {
   return ultima + 0.5 + tamano / 1e6;
 }
 
+/** Orden dentro de cada forma: primero las del catálogo antiguo, luego las de Rebrickable por medida. */
+function claveOrden(v: PiezaVista, pieza: string): [number, number, number, string] {
+  if (!v.partNum) return [0, orden(pieza), 0, ""];
+  const n = (v.medida ?? "").match(/\d+/g)?.map(Number) ?? [];
+  return [1, n[0] ?? 999, n[1] ?? 999, `${v.categoria ?? ""} ${v.nombre}`];
+}
+
 export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; ubicacionInicial?: string }) {
   const [busqueda, setBusqueda] = useState("");
   const [formaFiltro, setFormaFiltro] = useState<FormaId>();
@@ -60,16 +72,22 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
     .map((f) => ({
       ...f,
       cantidad: cantidades[f.id] ?? f.cantidad,
-      datos: buscarPieza(f.pieza),
+      vista: vistaDeFila(f),
       colorDatos: buscarColor(f.color),
     }))
-    .filter((f) => f.datos !== undefined)
-    .sort(
-      (a, b) =>
-        orden(a.pieza) - orden(b.pieza) ||
+    .filter((f) => f.vista !== undefined)
+    .sort((a, b) => {
+      const ka = claveOrden(a.vista!, a.pieza);
+      const kb = claveOrden(b.vista!, b.pieza);
+      return (
+        ka[0] - kb[0] ||
+        ka[1] - kb[1] ||
+        ka[2] - kb[2] ||
+        ka[3].localeCompare(kb[3]) ||
         (a.color ?? "").localeCompare(b.color ?? "") ||
-        (a.ubicacion ?? "").localeCompare(b.ubicacion ?? "", "es", { numeric: true }),
-    );
+        (a.ubicacion ?? "").localeCompare(b.ubicacion ?? "", "es", { numeric: true })
+      );
+    });
 
   const otrosUsados = [
     ...new Map(
@@ -82,16 +100,17 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
   const coloresUsados = [...COLORES.filter((c) => filas.some((f) => f.color === c.id)), ...otrosUsados];
 
   const visibles = todas.filter((f) => {
-    if (formaFiltro && f.datos!.forma !== formaFiltro) return false;
+    if (formaFiltro && f.vista!.forma !== formaFiltro) return false;
     if (colorFiltro && f.color !== colorFiltro) return false;
     if (ubicacionFiltro === "sin" ? f.ubicacion : ubicacionFiltro && f.ubicacion !== ubicacionFiltro) return false;
     if (busqueda.trim()) {
-      const forma = FORMAS.find((x) => x.id === f.datos!.forma)!;
-      const sub = forma.subtipos.find((s) => s.id === f.datos!.subtipo)!;
+      const forma = FORMAS.find((x) => x.id === f.vista!.forma)!;
+      const v = f.vista!;
       const texto = [
-        f.datos!.nombre,
+        v.partNum ? textoBusqueda(v.partNum, v.nombre, v.categoria ?? "") : v.nombre,
         forma.nombre,
-        sub.nombre,
+        v.categoria ?? "",
+        v.medida ?? "",
         f.colorDatos?.nombre ?? "sin color",
         f.ubicacion ?? "sin ordenar",
       ].join(" ");
@@ -220,7 +239,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
         </p>
       ) : (
         FORMAS.map((forma) => {
-          const grupo = visibles.filter((f) => f.datos!.forma === forma.id);
+          const grupo = visibles.filter((f) => f.vista!.forma === forma.id);
           if (grupo.length === 0) return null;
           return (
             <section key={forma.id}>
@@ -232,23 +251,22 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
               </h2>
               <ul className="mt-2 space-y-2">
                 {grupo.map((f) => {
-                  const sub = forma.subtipos.find((s) => s.id === f.datos!.subtipo)!;
+                  const v = f.vista!;
+                  // La categoría se enseña si ayuda a distinguir (no en las rectangulares antiguas).
+                  const verCategoria =
+                    !!v.categoria && (!!v.partNum || (v.categoria !== "Rectangulares" && forma.id !== "muneco"));
                   return (
                     <li key={f.id} className="flex items-center gap-2 rounded-[10px] border border-line bg-card p-2">
                       <Link href={`/pieza/${f.id}`} className="flex min-w-0 flex-1 items-center gap-2">
-                        <DibujoPieza
-                          dibujo={f.datos!.dibujo}
-                          color={f.colorDatos?.hex}
-                          transparente={f.colorDatos?.transparente}
-                          tamano={52}
-                        />
+                        <Miniatura vista={v} color={f.colorDatos} tamano={52} />
                         <div className="min-w-0">
                           <p className="truncate font-display text-lg font-bold leading-tight">
-                            {f.datos!.medida}
-                            {sub.id !== "rect" && forma.id !== "muneco" && forma.subtipos.length > 1 && (
-                              <span className="ml-1 font-sans text-xs font-normal text-ink/60">{sub.nombre}</span>
+                            {v.medida ?? (v.partNum ? v.categoria : v.nombre)}
+                            {verCategoria && v.medida && (
+                              <span className="ml-1 font-sans text-xs font-normal text-ink/60">{v.categoria}</span>
                             )}
                           </p>
+                          {v.partNum && <p className="truncate text-[11px] leading-tight text-ink/50">{v.nombre}</p>}
                           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-sm text-ink/70">
                             <span>{f.colorDatos?.nombre ?? "Sin color"}</span>
                             <span
@@ -266,7 +284,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                           type="button"
                           onClick={() => cambiar(f.id, f.cantidad, -1)}
                           disabled={f.cantidad === 0}
-                          aria-label={`Una menos de ${f.datos!.nombre}`}
+                          aria-label={`Una menos de ${f.vista!.nombre}`}
                           className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-line text-xl disabled:opacity-30"
                         >
                           −
@@ -275,7 +293,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                         <button
                           type="button"
                           onClick={() => cambiar(f.id, f.cantidad, 1)}
-                          aria-label={`Una más de ${f.datos!.nombre}`}
+                          aria-label={`Una más de ${f.vista!.nombre}`}
                           className="flex h-11 w-11 items-center justify-center rounded-[10px] border border-line text-xl"
                         >
                           +

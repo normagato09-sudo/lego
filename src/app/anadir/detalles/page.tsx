@@ -2,20 +2,24 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CabeceraVolver } from "@/components/Cabecera";
 import { FormularioDetalles } from "@/components/FormularioDetalles";
-import { buscarPieza } from "@/lib/catalogo";
 import { coloresUsados, ubicacionesUsadas } from "@/lib/piezas";
+import { leerPiezaRb } from "@/lib/rebrickable/piezas";
+import { exigirSesion } from "@/lib/sesion";
+import { vistaDesdeRb } from "@/lib/vista";
 
 export const metadata = { title: "Color, cantidad y caja · LEGO Inventario" };
 
 async function Contenido({ searchParams }: { searchParams: PageProps<"/anadir/detalles">["searchParams"] }) {
-  const { pieza: id } = await searchParams;
-  const pieza = typeof id === "string" ? buscarPieza(id) : undefined;
-  if (!pieza) redirect("/anadir");
+  await exigirSesion();
+  const { rb } = await searchParams;
+  const datos = typeof rb === "string" && rb ? await leerPiezaRb(rb) : undefined;
+  if (!datos) redirect("/anadir");
+  const pieza = vistaDesdeRb(datos);
   const [ubicaciones, misColores] = await Promise.all([ubicacionesUsadas(), coloresUsados()]);
   return (
     <>
-      <CabeceraVolver titulo="Color, cantidad y caja" volverA={`/anadir?pieza=${pieza.id}`} />
-      <FormularioDetalles piezaId={pieza.id} ubicaciones={ubicaciones} misColores={misColores} />
+      <CabeceraVolver titulo="Color, cantidad y caja" volverA={`/anadir?rb=${encodeURIComponent(datos.part_num)}`} />
+      <FormularioDetalles pieza={pieza} ubicaciones={ubicaciones} misColores={misColores} />
     </>
   );
 }

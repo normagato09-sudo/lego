@@ -5,7 +5,9 @@ import { useState, useTransition } from "react";
 import { cambiarCantidad } from "@/app/acciones";
 import { DibujoPieza } from "@/components/DibujoPieza";
 import { Miniatura } from "@/components/Miniatura";
-import { COLORES, FORMAS, PIEZAS, buscarColor, buscarPieza, type FormaId } from "@/lib/catalogo";
+import { NombreCompleto } from "@/components/NombreCompleto";
+import { VistaGrande } from "@/components/VistaGrande";
+import { COLORES, FORMAS, PIEZAS, buscarColor, buscarPieza, type Color, type FormaId } from "@/lib/catalogo";
 import { textoBusqueda } from "@/lib/rebrickable/busqueda";
 import { coincide } from "@/lib/texto";
 import { vistaDeFila, type DatosRb, type PiezaVista } from "@/lib/vista";
@@ -65,6 +67,8 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
   const [ubicacionFiltro, setUbicacionFiltro] = useState(ubicacionInicial);
   const [cantidades, setCantidades] = useState<Record<number, number>>({});
   const [error, setError] = useState<string>();
+  // Pieza que se está viendo en grande (al pulsar su imagen).
+  const [ampliada, setAmpliada] = useState<{ vista: PiezaVista; color?: Color }>();
   const [, empezar] = useTransition();
 
   // Cada fila con su pieza y color del catálogo (y la cantidad al día).
@@ -257,8 +261,15 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                     !!v.categoria && (!!v.partNum || (v.categoria !== "Rectangulares" && forma.id !== "muneco"));
                   return (
                     <li key={f.id} className="flex items-center gap-2 rounded-[10px] border border-line bg-card p-2">
-                      <Link href={`/pieza/${f.id}`} className="flex min-w-0 flex-1 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAmpliada({ vista: v, color: f.colorDatos })}
+                        aria-label={`Ver en grande: ${v.nombre}`}
+                        className="shrink-0 rounded-[8px]"
+                      >
                         <Miniatura vista={v} color={f.colorDatos} tamano={52} />
+                      </button>
+                      <Link href={`/pieza/${f.id}`} className="flex min-w-0 flex-1 items-center gap-2">
                         <div className="min-w-0">
                           <p className="truncate font-display text-lg font-bold leading-tight">
                             {v.medida ?? (v.partNum ? v.categoria : v.nombre)}
@@ -266,7 +277,10 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                               <span className="ml-1 font-sans text-xs font-normal text-ink/60">{v.categoria}</span>
                             )}
                           </p>
-                          {v.partNum && <p className="truncate text-[11px] leading-tight text-ink/50">{v.nombre}</p>}
+                          {v.partNum && (
+                            <NombreCompleto texto={v.nombre} className="text-xs leading-tight text-ink/60" />
+                          )}
+                          {v.partNum && <p className="font-mono text-[11px] leading-tight text-ink/50">{v.partNum}</p>}
                           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-sm text-ink/70">
                             <span>{f.colorDatos?.nombre ?? "Sin color"}</span>
                             <span
@@ -306,6 +320,9 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
             </section>
           );
         })
+      )}
+      {ampliada && (
+        <VistaGrande vista={ampliada.vista} color={ampliada.color} onCerrar={() => setAmpliada(undefined)} />
       )}
     </div>
   );

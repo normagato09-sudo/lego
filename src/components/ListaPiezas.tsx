@@ -8,6 +8,7 @@ import { Miniatura } from "@/components/Miniatura";
 import { NombreCompleto } from "@/components/NombreCompleto";
 import { VistaGrande } from "@/components/VistaGrande";
 import { COLORES, FORMAS, PIEZAS, buscarColor, buscarPieza, type Color, type FormaId } from "@/lib/catalogo";
+import { claveDeGrupo, claveDeVariante, nombreDeTipo } from "@/lib/agrupar";
 import { textoBusqueda } from "@/lib/rebrickable/busqueda";
 import { coincide } from "@/lib/texto";
 import { vistaDeFila, type DatosRb, type PiezaVista } from "@/lib/vista";
@@ -103,17 +104,23 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
   ];
   const coloresUsados = [...COLORES.filter((c) => filas.some((f) => f.color === c.id)), ...otrosUsados];
 
+  // Si lo escrito es exactamente un número de pieza (ej. "4623"), se enseña esa variante sola.
+  const consulta = busqueda.trim().replace(/\s+/g, "").toLowerCase();
+  const buscaNumero = consulta !== "" && todas.some((f) => f.vista!.partNum?.toLowerCase() === consulta);
+
   const visibles = todas.filter((f) => {
     if (formaFiltro && f.vista!.forma !== formaFiltro) return false;
     if (colorFiltro && f.color !== colorFiltro) return false;
     if (ubicacionFiltro === "sin" ? f.ubicacion : ubicacionFiltro && f.ubicacion !== ubicacionFiltro) return false;
+    if (buscaNumero) return f.vista!.partNum?.toLowerCase() === consulta;
     if (busqueda.trim()) {
       const forma = FORMAS.find((x) => x.id === f.vista!.forma)!;
       const v = f.vista!;
+      const categoria = (v.categoria ?? "").replace(/\([^)]*\)/g, " ");
       const texto = [
-        v.partNum ? textoBusqueda(v.partNum, v.nombre, v.categoria ?? "") : v.nombre,
+        v.partNum ? textoBusqueda(v.partNum, v.nombre, categoria) : v.nombre,
         forma.nombre,
-        v.categoria ?? "",
+        categoria,
         v.medida ?? "",
         f.colorDatos?.nombre ?? "sin color",
         f.ubicacion ?? "sin ordenar",
@@ -122,6 +129,32 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
     }
     return true;
   });
+
+  type Fila = (typeof visibles)[number];
+  type Bloque = { tipo: "fila"; f: Fila } | { tipo: "grupo"; clave: string; filas: Fila[] };
+
+  /** Junta las piezas del mismo tipo. Los tipos con una sola variante se ven como siempre. */
+  function bloques(filas: Fila[]): Bloque[] {
+    if (buscaNumero) return filas.map((f) => ({ tipo: "fila", f }));
+    const porClave = new Map<string, Fila[]>();
+    for (const f of filas) {
+      const k = claveDeGrupo(f);
+      porClave.set(k, [...(porClave.get(k) ?? []), f]);
+    }
+    const salida: Bloque[] = [];
+    const puestos = new Set<string>();
+    for (const f of filas) {
+      const k = claveDeGrupo(f);
+      const delGrupo = porClave.get(k)!;
+      if (new Set(delGrupo.map(claveDeVariante)).size <= 1) {
+        salida.push({ tipo: "fila", f });
+      } else if (!puestos.has(k)) {
+        puestos.add(k);
+        salida.push({ tipo: "grupo", clave: k, filas: delGrupo });
+      }
+    }
+    return salida;
+  }
 
   const totalPiezas = visibles.reduce((s, f) => s + f.cantidad, 0);
   const sinOrdenar = visibles.filter((f) => !f.ubicacion).reduce((s, f) => s + f.cantidad, 0);
@@ -239,7 +272,7 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
         </p>
       ) : visibles.length === 0 ? (
         <p className="rounded-[10px] border border-line bg-card p-4 text-center text-ink/70">
-          No hay piezas con esa búsqueda o filtro.
+          No hay piezas que coincidan.
         </p>
       ) : (
         FORMAS.map((forma) => {
@@ -254,7 +287,9 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
                 </span>
               </h2>
               <ul className="mt-2 space-y-2">
-                {grupo.map((f) => {
+                {bloques(grupo).map((b) => {
+                  if (b.tipo === "grupo") return <TarjetaGrupo key={b.clave} clave={b.clave} filas={b.filas} />;
+                  const f = b.f;
                   const v = f.vista!;
                   // La categoría se enseña si ayuda a distinguir (no en las rectangulares antiguas).
                   const verCategoria =
@@ -325,6 +360,53 @@ export function ListaPiezas({ filas, ubicacionInicial }: { filas: FilaLista[]; u
         <VistaGrande vista={ampliada.vista} color={ampliada.color} onCerrar={() => setAmpliada(undefined)} />
       )}
     </div>
+  );
+}
+
+type FilaGrupo = {
+  pieza: string;
+  cantidad: number;
+  rb: DatosRb | null;
+  vista?: PiezaVista;
+  colorDatos?: Color;
+};
+
+/** Una tarjeta por tipo: portada, nombre del tipo, cuántas variantes y cuántas piezas en total. */
+function TarjetaGrupo({ clave, filas }: { clave: string; filas: FilaGrupo[] }) {
+  // De portada, la variante de la que más piezas hay.
+  const portada = filas.reduce((a, b) => (b.cantidad > a.cantidad ? b : a));
+  const v = portada.vista!;
+  const variantes = new Set(filas.map(claveDeVariante)).size;
+  const total = filas.reduce((s, f) => s + f.cantidad, 0);
+  return (
+    <li className="rounded-[10px] border border-line bg-card">
+      <Link href={`/variantes?g=${encodeURIComponent(clave)}`} className="flex items-center gap-2 p-2">
+        <Miniatura vista={v} color={portada.colorDatos} tamano={52} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-lg font-bold leading-tight">
+            {v.medida ?? v.categoria}
+            {v.medida && v.categoria && (
+              <span className="ml-1 font-sans text-xs font-normal text-ink/60">{v.categoria}</span>
+            )}
+          </p>
+          <NombreCompleto texto={nombreDeTipo(v.nombre)} className="text-xs leading-tight text-ink/60" />
+          <p className="mt-1">
+            <span className="rounded border border-line px-1.5 font-mono text-xs text-ink">
+              {variantes} variantes
+            </span>
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 pr-1">
+          <span className="text-right leading-tight">
+            <span className="block font-mono text-base">{total}</span>
+            <span className="block text-[11px] text-ink/60">en total</span>
+          </span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-ink/40" aria-hidden="true">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </Link>
+    </li>
   );
 }
 

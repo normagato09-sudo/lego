@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Space_Grotesk } from "next/font/google";
+import { AvisoVersion } from "@/components/AvisoVersion";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -46,7 +47,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es"
       className={`${spaceGrotesk.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-fog font-sans text-ink">{children}</body>
+      <body className="min-h-full bg-fog font-sans text-ink">
+        {children}
+        {/* Versión con la que se abrió la app (en local no hay, y no sale aviso). */}
+        <AvisoVersion version={process.env.VERCEL_GIT_COMMIT_SHA ?? null} />
+      </body>
     </html>
   );
 }

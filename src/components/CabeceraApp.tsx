@@ -15,6 +15,10 @@ export function CabeceraApp({ activa }: { activa: "piezas" | "cajas" }) {
           <rect x="2" y="9" width="60" height="33" rx="4" fill="#c91a09" />
         </svg>
         <span className="font-display text-xl font-bold">LEGO Inventario</span>
+        {/* Versión que estás viendo: los 7 primeros caracteres del commit. */}
+        <span className="ml-auto font-mono text-[11px] text-ink/40" title="Versión de la app">
+          {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local"}
+        </span>
       </div>
       <nav className="mt-1 flex px-2">
         {pestanas.map((p) => (
